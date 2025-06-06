@@ -5,14 +5,30 @@ import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 // Consider a library like Heroicons: npm install @heroicons/react
 
 // Placeholder icons (replace with actual SVGs or an icon library)
-const DashboardIcon = () => <span className="w-5 h-5 mr-3">D</span>;
-const BatchesIcon = () => <span className="w-5 h-5 mr-3">B</span>;
-const SubjectsIcon = () => <span className="w-5 h-5 mr-3">S</span>;
-const SettingsIcon = () => <span className="w-5 h-5 mr-3">⚙️</span>;
+const DashboardIcon = () => <span className="w-5 h-5 mr-3"><img
+                          src="/src/assets/icons/dashboard-monitor.png" 
+                          alt="Settings"
+                          className="w-5 h-5 inline"
+                        /></span>;
+const BatchesIcon = () => <span className="w-5 h-5 mr-3"><img 
+                          src="/src/assets/icons/crowd2.png" 
+                          alt="Settings"
+                          className="w-5 h-5 inline"
+                         /></span>;
+const SubjectsIcon = () => <span className="w-5 h-5 mr-3"><img
+                          src="/src/assets/icons/book.png" 
+                          alt="Subject"
+                          className="w-5 h-5 inline"
+                        /></span>;
+const SettingsIcon = () => <span className="w-5 h-5 mr-3"><img
+                          src="/src/assets/icons/set.gif" 
+                          alt="Settings"
+                          className="w-5 h-5 inline"
+                        /></span>;
 const NotificationIcon = () => (
   <button className="w-8 h-8">
     <img 
-      src="/src/assets/icons/bell2.svg"
+      src="/src/assets/icons/bell.png"
       alt="Notifications"
       className="w-full h-full"
     />
@@ -20,7 +36,7 @@ const NotificationIcon = () => (
 );
 
 const UserAvatar = ({ user }) => (
-  <div className="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-semibold">
+  <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center text-white text-lg font-semibold">
     {user?.email ? user.email.substring(0, 1).toUpperCase() : "U"}
   </div>
 );
@@ -63,10 +79,10 @@ const AdminLayout = ({ user, onLogout }) => {
           <SubjectsIcon />
           Subjects
         </NavLink>
-        {/* <NavLink to="/admin/settings" className={navLinkClasses}>
+        { <NavLink to="/admin/settings" className={navLinkClasses}>
                     <SettingsIcon />
                     Settings
-                </NavLink> */}
+                </NavLink> }
       </nav>
     </>
   );
@@ -85,7 +101,11 @@ const AdminLayout = ({ user, onLogout }) => {
             onClick={handleLogoutClick}
             className="w-full flex items-center justify-center px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-100 rounded-lg transition-colors duration-150"
           >
-            <span className="mr-2">🚪</span> {/* Logout Icon Placeholder */}
+            <span className="mr-2"><img
+                          src="/src/assets/icons/logout.svg" 
+                          alt="Logout"
+                          className="w-5 h-5 inline"
+                        /></span> {/* Logout Icon Placeholder */}
             Logout
           </button>
         </div>
