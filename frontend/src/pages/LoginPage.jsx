@@ -1,15 +1,15 @@
 // src/pages/LoginPage.jsx
-// Login page with role selection for Admin or Faculty.
-
 import React, { useState } from "react";
 
-const RoleLoginForm = ({ onLogin }) => {
+const RoleLoginForm = ({ onLoginSuccess }) => {
+  // Changed prop name to match App.jsx
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [role, setRole] = useState("faculty"); // Default role
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
+    // Make handleSubmit async
     e.preventDefault();
     setError("");
 
@@ -17,10 +17,34 @@ const RoleLoginForm = ({ onLogin }) => {
       setError("Please enter both email/ID and password.");
       return;
     }
-    console.log("Login attempt with:", { email, password, role });
-    setTimeout(() => {
-      onLogin({ email, role });
-    }, 500);
+
+    try {
+      const response = await fetch("http://localhost:3000/api/auth/login", {
+        // Assuming your login route is /api/auth/login
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ username: email, password, role }), // Send username, password, and role
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Assuming the backend returns an accessToken upon successful login
+        if (data && data.accessToken) {
+          // Call the onLoginSuccess function in App.jsx to update the authentication state
+          onLoginSuccess({ token: data.accessToken, role }); // Pass the token and role
+        } else {
+          setError("Login successful but access token not received.");
+        }
+      } else {
+        setError(data?.message || "Invalid credentials"); // Display error from backend
+      }
+    } catch (error) {
+      console.error("Login failed:", error);
+      setError("Failed to connect to the server.");
+    }
   };
 
   return (
@@ -128,14 +152,7 @@ const RoleLoginForm = ({ onLogin }) => {
 };
 
 const LoginPage = ({ onLoginSuccess }) => {
-  const handleActualLogin = (loginData) => {
-    console.log(
-      "Login successful in LoginPage, calling onLoginSuccess with:",
-      loginData
-    );
-    onLoginSuccess(loginData);
-  };
-
+  // Receive onLoginSuccess from App.jsx
   return (
     <div className="min-h-[calc(100vh-16rem)] flex flex-col items-center justify-center bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600 px-4 py-12 sm:px-6 lg:px-8">
       <div className="w-full max-w-md space-y-8">
@@ -148,7 +165,8 @@ const LoginPage = ({ onLoginSuccess }) => {
           </p>
         </div>
         <div className="bg-white py-8 px-4 shadow-2xl rounded-xl sm:px-10">
-          <RoleLoginForm onLogin={handleActualLogin} />
+          <RoleLoginForm onLoginSuccess={onLoginSuccess} />{" "}
+          {/* Pass onLoginSuccess to the form */}
         </div>
       </div>
       <p className="mt-8 text-center text-xs text-slate-400">

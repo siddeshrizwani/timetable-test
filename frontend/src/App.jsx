@@ -1,7 +1,7 @@
 // src/App.jsx
 // Main application component with role-based routing.
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -26,19 +26,33 @@ import FacultyDashboardPage from "./pages/FacultyDashboardPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 function App() {
-  const [authDetails, setAuthDetails] = useState(null); // Stores { email, role }
+  const [authDetails, setAuthDetails] = useState(null); // Stores { token, role }
+
+  useEffect(() => {
+    // Check for a token in local storage on initial load
+    const storedToken = localStorage.getItem("authToken");
+    const storedRole = localStorage.getItem("userRole");
+    if (storedToken && storedRole) {
+      setAuthDetails({ token: storedToken, role: storedRole });
+    }
+  }, []);
 
   const handleLoginSuccess = (loginData) => {
     console.log("Login successful in App.jsx with:", loginData);
-    setAuthDetails(loginData);
+    setAuthDetails(loginData); // Store the token and role in state
+    localStorage.setItem("authToken", loginData.token); // Store token in local storage
+    localStorage.setItem("userRole", loginData.role); // Store role in local storage
   };
 
   const handleLogout = () => {
     console.log("Logout triggered in App.jsx");
-    setAuthDetails(null);
+    setAuthDetails(null); // Clear authentication details on logout
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("userRole");
+    // Redirect to login page (handled by the <Navigate> in the component)
   };
 
-  const isAuthenticated = !!authDetails;
+  const isAuthenticated = !!authDetails?.token; // Check if token exists
   const userRole = authDetails?.role;
 
   const ProtectedRoute = ({ children, allowedRoles }) => {
