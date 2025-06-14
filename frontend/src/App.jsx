@@ -1,177 +1,141 @@
-// src/App.jsx
-// Main application component with role-based routing.
-
 import React, { useState, useEffect } from "react";
-import {
-  BrowserRouter,
-  Routes,
-  Route,
-  Navigate,
-  Link,
-  Outlet,
-} from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
-// --- Page Component Imports ---
+// Page Imports
 import PublicHomePage from "./pages/PublicHomePage";
 import LoginPage from "./pages/LoginPage";
-// AdminLayout will serve as the main page for the /admin/* routes
-import AdminLayout from "./pages/AdminLayout"; // Renamed from AdminDashboardPage for clarity
+import AdminLayout from "./pages/AdminLayout";
+import FacultyLayout from "./pages/FacultyLayout";
+import NotFoundPage from "./pages/NotFoundPage";
+
+// Admin Pages
 import AdminDashboardOverview from "./pages/admin/AdminDashboardOverview";
 import BatchesListPage from "./pages/admin/BatchesListPage";
 import CreateBatchPage from "./pages/admin/CreateBatchPage";
+import EditBatchPage from "./pages/admin/EditBatchPage";
+import BatchDetailPage from "./pages/admin/BatchDetailPage";
 import SubjectsListPage from "./pages/admin/SubjectsListPage";
 import CreateSubjectPage from "./pages/admin/CreateSubjectPage";
+import EditSubjectPage from "./pages/admin/EditSubjectPage";
+import SubjectDetailPage from "./pages/admin/SubjectDetailPage";
+import TeachersListPage from "./pages/admin/TeachersListPage";
+import CreateTeacherPage from "./pages/admin/CreateTeacherPage";
+import RoomsListPage from "./pages/admin/RoomsListPage";
+import CreateRoomPage from "./pages/admin/CreateRoomPage";
+import TimetableViewerPage from "./pages/admin/TimetableViewerPage";
 
-import FacultyDashboardPage from "./pages/FacultyDashboardPage";
-import NotFoundPage from "./pages/NotFoundPage";
+// Faculty Pages
+// --- FIX: Corrected the import path for FacultyDashboardPage ---
+import FacultyDashboardPage from "./pages/faculty/FacultyDashboardPage";
+import FacultyProfilePage from "./pages/faculty/FacultyProfilePage";
 
 function App() {
-  const [authDetails, setAuthDetails] = useState(null); // Stores { token, role }
+  const [authDetails, setAuthDetails] = useState(null);
 
   useEffect(() => {
-    // Check for a token in local storage on initial load
-    const storedToken = localStorage.getItem("authToken");
-    const storedRole = localStorage.getItem("userRole");
-    if (storedToken && storedRole) {
-      setAuthDetails({ token: storedToken, role: storedRole });
-    }
+    const token = localStorage.getItem("authToken");
+    const role = localStorage.getItem("userRole");
+    if (token && role) setAuthDetails({ token, role });
   }, []);
 
   const handleLoginSuccess = (loginData) => {
-    console.log("Login successful in App.jsx with:", loginData);
-    setAuthDetails(loginData); // Store the token and role in state
-    localStorage.setItem("authToken", loginData.token); // Store token in local storage
-    localStorage.setItem("userRole", loginData.role); // Store role in local storage
+    setAuthDetails(loginData);
+    localStorage.setItem("authToken", loginData.token);
+    localStorage.setItem("userRole", loginData.role);
   };
 
   const handleLogout = () => {
-    console.log("Logout triggered in App.jsx");
-    setAuthDetails(null); // Clear authentication details on logout
+    setAuthDetails(null);
     localStorage.removeItem("authToken");
     localStorage.removeItem("userRole");
-    // Redirect to login page (handled by the <Navigate> in the component)
   };
 
-  const isAuthenticated = !!authDetails?.token; // Check if token exists
-  const userRole = authDetails?.role;
-
   const ProtectedRoute = ({ children, allowedRoles }) => {
-    if (!isAuthenticated) {
-      return <Navigate to="/login" replace />;
-    }
-    if (allowedRoles && !allowedRoles.includes(userRole)) {
-      console.warn(
-        `User with role "${userRole}" tried to access a route for roles: ${allowedRoles.join(
-          ", "
-        )}`
-      );
-      return <Navigate to="/" replace />; // Or an "Access Denied" page
-    }
+    if (!authDetails?.token) return <Navigate to="/login" replace />;
+    if (!allowedRoles.includes(authDetails.role))
+      return <Navigate to="/" replace />;
     return children;
   };
 
   return (
     <BrowserRouter>
-      <div className="flex flex-col min-h-screen bg-slate-100">
-        {" "}
-        {/* Overall page background */}
-        {/* Global Nav will be rendered if user is not in an admin/faculty specific layout */}
-        {!isAuthenticated && ( // Example: Only show global nav if not logged in, or make it part of layouts
-          <nav className="bg-slate-900 text-slate-200 shadow-lg sticky top-0 z-50">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between h-16">
-                <Link
-                  to="/"
-                  className="font-bold text-xl hover:text-white transition-colors duration-150"
-                >
-                  Timetable Portal
-                </Link>
-                <div className="flex items-center space-x-3 sm:space-x-4">
-                  {!isAuthenticated && (
-                    <Link
-                      to="/login"
-                      className="px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-700 hover:text-white transition-colors duration-150"
-                    >
-                      Login
-                    </Link>
-                  )}
-                </div>
-              </div>
-            </div>
-          </nav>
-        )}
-        <main className="flex-grow">
-          {" "}
-          {/* Main content area takes remaining space */}
-          <Routes>
-            <Route path="/" element={<PublicHomePage />} />
-            <Route
-              path="/login"
-              element={
-                isAuthenticated ? (
-                  userRole === "admin" ? (
-                    <Navigate to="/admin/dashboard" replace />
-                  ) : userRole === "faculty" ? (
-                    <Navigate to="/faculty/dashboard" replace />
-                  ) : (
-                    <Navigate to="/" replace />
-                  )
-                ) : (
-                  <LoginPage onLoginSuccess={handleLoginSuccess} />
-                )
-              }
-            />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            !authDetails ? (
+              <PublicHomePage />
+            ) : (
+              <Navigate
+                to={
+                  authDetails.role === "user"
+                    ? "/faculty/dashboard"
+                    : "/admin/dashboard"
+                }
+              />
+            )
+          }
+        />
+        <Route
+          path="/login"
+          element={
+            !authDetails ? (
+              <LoginPage onLoginSuccess={handleLoginSuccess} />
+            ) : (
+              <Navigate
+                to={
+                  authDetails.role === "user"
+                    ? "/faculty/dashboard"
+                    : "/admin/dashboard"
+                }
+              />
+            )
+          }
+        />
 
-            {/* Admin Nested Routes */}
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute allowedRoles={["admin"]}>
-                  <AdminLayout user={authDetails} onLogout={handleLogout} />
-                </ProtectedRoute>
-              }
-            >
-              <Route
-                path="dashboard"
-                element={<AdminDashboardOverview user={authDetails} />}
-              />{" "}
-              {/* Default admin page */}
-              <Route path="batches" element={<BatchesListPage />} />
-              <Route path="batches/new" element={<CreateBatchPage />} />
-              {/* Add edit batch route: <Route path="batches/edit/:batchId" element={<EditBatchPage />} /> */}
-              <Route path="subjects" element={<SubjectsListPage />} />
-              <Route path="subjects/new" element={<CreateSubjectPage />} />
-              {/* Add edit subject route: <Route path="subjects/edit/:subjectId" element={<EditSubjectPage />} /> */}
-              {/* <Route path="settings" element={<AdminSettingsPage />} /> */}
-              <Route index element={<Navigate to="dashboard" replace />} />{" "}
-              {/* Default to dashboard overview */}
-            </Route>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute allowedRoles={["admin", "super"]}>
+              <AdminLayout user={authDetails} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<AdminDashboardOverview />} />
+          <Route path="batches" element={<BatchesListPage />} />
+          <Route path="batches/new" element={<CreateBatchPage />} />
+          <Route path="batches/edit/:batchId" element={<EditBatchPage />} />
+          <Route path="batches/:batchId" element={<BatchDetailPage />} />
+          <Route path="subjects" element={<SubjectsListPage />} />
+          <Route path="subjects/new" element={<CreateSubjectPage />} />
+          <Route
+            path="subjects/edit/:subjectId"
+            element={<EditSubjectPage />}
+          />
+          <Route path="subjects/:subjectId" element={<SubjectDetailPage />} />
+          <Route path="teachers" element={<TeachersListPage />} />
+          <Route path="teachers/new" element={<CreateTeacherPage />} />
+          <Route path="rooms" element={<RoomsListPage />} />
+          <Route path="rooms/new" element={<CreateRoomPage />} />
+          <Route path="timetable" element={<TimetableViewerPage />} />
+        </Route>
 
-            {/* Faculty Routes */}
-            <Route
-              path="/faculty/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={["faculty"]}>
-                  {/* FacultyLayout could be used here if faculty also has complex layout */}
-                  <FacultyDashboardPage
-                    user={authDetails}
-                    onLogout={handleLogout}
-                  />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </main>
-        {/* Global footer might be conditional or part of layouts too */}
-        {!isAuthenticated && (
-          <footer className="bg-slate-900 text-slate-400 py-8 text-center text-sm">
-            <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-              &copy; {new Date().getFullYear()} University Timetable Project.
-            </div>
-          </footer>
-        )}
-      </div>
+        <Route
+          path="/faculty"
+          element={
+            <ProtectedRoute allowedRoles={["user"]}>
+              <FacultyLayout user={authDetails} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route path="dashboard" element={<FacultyDashboardPage />} />
+          <Route path="profile" element={<FacultyProfilePage />} />
+        </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
+      </Routes>
     </BrowserRouter>
   );
 }
