@@ -1,15 +1,12 @@
-// src/pages/admin/SubjectsListPage.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 
-// Placeholder Search Icon
 const SearchIcon = () => (
   <svg
     className="w-5 h-5 text-slate-400"
     fill="none"
     stroke="currentColor"
     viewBox="0 0 24 24"
-    xmlns="http://www.w3.org/2000/svg"
   >
     <path
       strokeLinecap="round"
@@ -19,241 +16,199 @@ const SearchIcon = () => (
     ></path>
   </svg>
 );
-
-// Placeholder data - replace with data fetched from your API
-const initialSubjects = [
-  {
-    id: "s1",
-    name: "Introduction to Programming",
-    code: "CS101",
-    credits: 3,
-    has_practical: true,
-  },
-  {
-    id: "s2",
-    name: "Calculus I",
-    code: "MA101",
-    credits: 4,
-    has_practical: false,
-  },
-  {
-    id: "s3",
-    name: "Digital Logic Design",
-    code: "EC102",
-    credits: 3,
-    has_practical: true,
-  },
-  {
-    id: "s4",
-    name: "Engineering Physics",
-    code: "PH102",
-    credits: 4,
-    has_practical: true,
-  },
-  {
-    id: "s5",
-    name: "Communication Skills",
-    code: "HS101",
-    credits: 2,
-    has_practical: false,
-  },
-];
+const RefreshIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="23 4 23 10 17 10"></polyline>
+    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+  </svg>
+);
 
 const SubjectsListPage = () => {
+  const [subjects, setSubjects] = useState([]);
+  const [filteredSubjects, setFilteredSubjects] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [subjects, setSubjects] = useState(initialSubjects);
 
-  const handleSearchChange = (event) => {
-    const term = event.target.value.toLowerCase();
-    setSearchTerm(term);
-    if (term === "") {
-      setSubjects(initialSubjects);
-    } else {
-      setSubjects(
-        initialSubjects.filter(
-          (subject) =>
-            subject.name.toLowerCase().includes(term) ||
-            subject.code.toLowerCase().includes(term)
-        )
-      );
+  const fetchSubjects = useCallback(async () => {
+    setIsLoading(true);
+    const token = localStorage.getItem("authToken");
+    try {
+      const response = await fetch("http://localhost:3000/api/subjects", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error("Failed to fetch subjects.");
+      const data = await response.json();
+      setSubjects(data);
+      setFilteredSubjects(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
     }
-  };
+  }, []);
 
-  const handleViewSubject = (subjectId) => {
-    alert(`View subject with ID: ${subjectId}`);
-    // navigate(`/admin/subjects/${subjectId}`);
-  };
+  useEffect(() => {
+    fetchSubjects();
+  }, [fetchSubjects]);
 
-  const handleEditSubject = (subjectId) => {
-    alert(`Edit subject with ID: ${subjectId}`);
-    // navigate(`/admin/subjects/edit/${subjectId}`);
-  };
+  useEffect(() => {
+    const results = subjects.filter(
+      (s) =>
+        s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        s.code.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredSubjects(results);
+  }, [searchTerm, subjects]);
 
-  const handleDeleteSubject = (subjectId) => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete subject with ID: ${subjectId}?`
-      )
-    ) {
-      setSubjects(subjects.filter((subject) => subject.id !== subjectId));
-      console.log(`Deleted subject with ID: ${subjectId}`);
-      alert(`Subject with ID: ${subjectId} deleted (simulated).`);
+  const handleDelete = async (subjectId, subjectName) => {
+    if (window.confirm(`Are you sure you want to delete "${subjectName}"?`)) {
+      const token = localStorage.getItem("authToken");
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/subjects/${subjectId}`,
+          {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.msg || "Failed to delete subject.");
+        }
+        alert("Subject deleted successfully!");
+        fetchSubjects();
+      } catch (err) {
+        alert(`Error: ${err.message}`);
+      }
     }
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-800">
-          Subjects Management
-        </h1>
-        <p className="mt-1 text-slate-600">
-          Manage academic subjects, credits, and their properties.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800">
+            Subjects Management
+          </h1>
+          <p className="mt-1 text-slate-600">
+            View, create, and manage all academic subjects.
+          </p>
+        </div>
+        <Link to="/admin/subjects/new" className="btn btn-primary">
+          Create Subject
+        </Link>
       </div>
-
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="relative w-full sm:w-auto sm:max-w-xs">
+      <div className="flex justify-between items-center">
+        <div className="relative sm:max-w-xs w-full">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <SearchIcon />
           </div>
           <input
             type="text"
-            name="search-subjects"
-            id="search-subjects"
-            className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors"
-            placeholder="Search subjects or code"
+            placeholder="Search by name or code..."
             value={searchTerm}
-            onChange={handleSearchChange}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input pl-10 w-full"
           />
         </div>
-        <div className="flex space-x-3 w-full sm:w-auto">
-          <Link
-            to="/admin/subjects/new"
-            className="w-full sm:w-auto flex justify-center items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-[#034078] hover:bg-[#001F54] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#034078] transition-colors"
-          >
-            Create Subject
-          </Link>
-          {/* "View All Subjects" button (as per design, though functionality might merge with search/filter) */}
-          {/* <button
-                type="button"
-                onClick={() => { setSearchTerm(''); setSubjects(initialSubjects); alert('Showing all subjects.'); }}
-                className="w-full sm:w-auto flex justify-center items-center px-6 py-2.5 border border-slate-300 text-sm font-medium rounded-lg text-slate-700 bg-white hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-            >
-                View All Subjects
-            </button> */}
-        </div>
+        <button
+          onClick={fetchSubjects}
+          className="btn btn-secondary flex items-center gap-2"
+        >
+          <RefreshIcon />
+          Refresh
+        </button>
       </div>
-
       <div className="bg-white shadow-xl rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
-                >
-                  Subject Name
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
-                >
-                  Code
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
-                >
-                  Credits
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
-                >
-                  Type
-                </th>
-                <th
-                  scope="col"
-                  className="px-15 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
-                >
-                  Actions
-                </th>
+                <th className="th">Subject Name</th>
+                <th className="th">Code</th>
+                <th className="th">Lecture Credits</th>
+                <th className="th">Lab Credits</th>
+                <th className="th">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {subjects.length > 0 ? (
-                subjects.map((subject) => (
-                  <tr
-                    key={subject.id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                      {subject.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                      {subject.code}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                      {subject.credits}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                      {subject.has_practical ? "Theory + Lab" : "Theory"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => handleViewSubject(subject.id)}
-                        title="View Details"
-                        className="text-indigo-600 hover:text-indigo-800 cursor-pointer  transition-colors px-2"
-                      >
-                        <img
-                          src="/src/assets/icons/eye2.svg"
-                          alt="View"
-                          className="w-5 h-5 inline"
-                        />{" "}
-                        {/* View Icon */}
-                      </button>
-                      <button
-                        onClick={() => handleEditSubject(subject.id)}
-                        title="Edit Subject"
-                        className="text-sky-600 hover:text-sky-800 cursor-pointer  transition-colors px-2"
-                      >
-                        <img
-                          src="/src/assets/icons/pencil.svg"
-                          alt="Edit"
-                          className="w-5 h-5 inline"
-                        />{" "}
-                        {/* Edit Icon */}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSubject(subject.id)}
-                        title="Delete Subject"
-                        className="text-red-600 hover:text-red-800 cursor-pointer transition-colors px-2"
-                      >
-                        <img
-                          src="/src/assets/icons/trash-2.svg"
-                          alt="Delete"
-                          className="w-5 h-5 inline"
-                        />
-                      </button>
+              {isLoading ? (
+                <tr>
+                  <td colSpan="5" className="td text-center">
+                    Loading...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan="5" className="td text-center text-red-500">
+                    {error}
+                  </td>
+                </tr>
+              ) : filteredSubjects.length > 0 ? (
+                filteredSubjects.map((subject) => (
+                  <tr key={subject.subject_id} className="hover:bg-slate-50">
+                    <td className="td font-medium">{subject.name}</td>
+                    <td className="td">{subject.code}</td>
+                    <td className="td">{subject.lecture_credits}</td>
+                    <td className="td">{subject.lab_credits}</td>
+                    <td className="td">
+                      {/* FIX: Icons are now in a flex container for alignment */}
+                      <div className="flex items-center space-x-2">
+                        {/* NEW: Added View icon link */}
+                        <Link
+                          to={`/admin/subjects/${subject.subject_id}`}
+                          title="View Details"
+                          className="p-2 text-slate-500 hover:text-indigo-600 rounded-full hover:bg-indigo-50 transition"
+                        >
+                          <img
+                            src="/src/assets/icons/eye2.svg"
+                            alt="View"
+                            className="w-5 h-5"
+                          />
+                        </Link>
+                        <Link
+                          to={`/admin/subjects/edit/${subject.subject_id}`}
+                          title="Edit"
+                          className="p-2 text-slate-500 hover:text-sky-600 rounded-full hover:bg-sky-50 transition"
+                        >
+                          <img
+                            src="/src/assets/icons/pencil.svg"
+                            alt="Edit"
+                            className="w-5 h-5"
+                          />
+                        </Link>
+                        <button
+                          onClick={() =>
+                            handleDelete(subject.subject_id, subject.name)
+                          }
+                          title="Delete"
+                          className="p-2 text-slate-500 hover:text-red-600 rounded-full hover:bg-red-50 transition"
+                        >
+                          <img
+                            src="/src/assets/icons/trash-2.svg"
+                            alt="Delete"
+                            className="w-5 h-5"
+                          />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="5"
-                    className="px-6 py-12 text-center text-sm text-slate-500"
-                  >
-                    No subjects found matching your search.{" "}
-                    <Link
-                      to="/admin/subjects/new"
-                      className="text-indigo-600 hover:underline"
-                    >
-                      Add a new subject
-                    </Link>
-                    .
+                  <td colSpan="5" className="td text-center">
+                    No subjects found.
                   </td>
                 </tr>
               )}
@@ -261,34 +216,6 @@ const SubjectsListPage = () => {
           </table>
         </div>
       </div>
-      {/* Placeholder for Pagination */}
-      {subjects.length > 0 &&
-        initialSubjects.length > 10 && ( // Show pagination if more than 10 initial subjects
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-sm text-slate-700">
-              Showing <span className="font-medium">1</span> to{" "}
-              <span className="font-medium">
-                {Math.min(10, subjects.length)}
-              </span>{" "}
-              of <span className="font-medium">{initialSubjects.length}</span>{" "}
-              results
-            </p>
-            <div className="flex space-x-1">
-              <button
-                className="px-3 py-1 border border-slate-300 rounded-md text-sm text-slate-600 hover:bg-slate-100 disabled:opacity-50"
-                disabled
-              >
-                Previous
-              </button>
-              <button
-                className="px-3 py-1 border border-slate-300 rounded-md text-sm text-slate-600 hover:bg-slate-100 disabled:opacity-50 "
-                disabled
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
     </div>
   );
 };

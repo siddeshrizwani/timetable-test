@@ -1,36 +1,36 @@
-// src/pages/admin/CreateBatchPage.jsx
-import React, { useState, useEffect, useRef } from "react";
-import { useNavigate } from "react-router-dom";
+// src/pages/admin/EditBatchPage.jsx
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { useNavigate, useParams, Link } from "react-router-dom";
 
-const CreateBatchPage = () => {
+// This component is very similar to CreateBatchPage, but it fetches existing data first.
+const EditBatchPage = () => {
+  const { batchId } = useParams();
   const navigate = useNavigate();
 
-  const [program, setProgram] = useState("B.Tech");
+  // Form state
+  const [program, setProgram] = useState("");
   const [branch, setBranch] = useState("");
-  const [startYear, setStartYear] = useState(new Date().getFullYear());
-  const [section, setSection] = useState("A");
+  const [startYear, setStartYear] = useState("");
+  const [section, setSection] = useState("");
   const [semesterNumber, setSemesterNumber] = useState("");
   const [generatedBatchName, setGeneratedBatchName] = useState("");
 
+  // Subjects state
   const [allAvailableSubjects, setAllAvailableSubjects] = useState([]);
   const [selectedSubjects, setSelectedSubjects] = useState([]);
   const [subjectSearchTerm, setSubjectSearchTerm] = useState("");
   const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState(false);
   const subjectDropdownRef = useRef(null);
 
+  // Control state
   const [formErrors, setFormErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
-  const [isSubjectsLoading, setIsSubjectsLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(true);
 
+  // Fetch all subjects available for the dropdown
   useEffect(() => {
     const fetchSubjects = async () => {
-      setIsSubjectsLoading(true);
       const token = localStorage.getItem("authToken");
-      if (!token) {
-        navigate("/login");
-        return;
-      }
-
       try {
         const response = await fetch("http://localhost:3000/api/subjects", {
           headers: { Authorization: `Bearer ${token}` },
@@ -40,13 +40,51 @@ const CreateBatchPage = () => {
         setAllAvailableSubjects(data);
       } catch (error) {
         setFormErrors((prev) => ({ ...prev, subjects: error.message }));
-      } finally {
-        setIsSubjectsLoading(false);
       }
     };
     fetchSubjects();
-  }, [navigate]);
+  }, []);
 
+  // Fetch the specific batch data to edit
+  useEffect(() => {
+    const fetchBatchData = async () => {
+      setIsDataLoading(true);
+      const token = localStorage.getItem("authToken");
+      try {
+        const res = await fetch(
+          `http://localhost:3000/api/batches/${batchId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        if (!res.ok) throw new Error("Could not fetch batch data.");
+        const data = await res.json();
+
+        // This is a simple parser. It could be more robust.
+        const nameParts = data.name.match(
+          /(\w+\.?\w*)\s*([\w\s]+?)\s*(\d{4})-(\d{4})\s*-\s*Section\s*(\w+)/
+        );
+        if (nameParts) {
+          setProgram(nameParts[1] || "B.Tech");
+          setBranch(nameParts[2].trim() || "");
+          setStartYear(parseInt(nameParts[3], 10) || "");
+          setSection(nameParts[5] || "A");
+        } else {
+          setGeneratedBatchName(data.name); // Fallback for names that don't match pattern
+        }
+
+        setSemesterNumber(data.semester_number || "");
+        setSelectedSubjects(data.subjects || []);
+      } catch (error) {
+        setFormErrors({ form: error.message });
+      } finally {
+        setIsDataLoading(false);
+      }
+    };
+    fetchBatchData();
+  }, [batchId]);
+
+  // Regenerate name preview when parts change
   useEffect(() => {
     const endYear = parseInt(startYear, 10) + 4;
     const yearRange = startYear ? `${startYear}-${endYear}` : "";
@@ -54,6 +92,46 @@ const CreateBatchPage = () => {
     setGeneratedBatchName(name.trim());
   }, [program, branch, startYear, section]);
 
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    // Validation would go here...
+    setIsLoading(true);
+    const token = localStorage.getItem("authToken");
+    const updatedBatchData = {
+      name: generatedBatchName,
+      academic_year: parseInt(startYear, 10),
+      semester_number: parseInt(semesterNumber, 10),
+      department: branch,
+      subject_ids: selectedSubjects.map((s) => s.subject_id),
+    };
+
+    try {
+      const response = await fetch(
+        `http://localhost:3000/api/batches/${batchId}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(updatedBatchData),
+        }
+      );
+      const resData = await response.json();
+      if (!response.ok)
+        throw new Error(resData.msg || "Failed to update batch.");
+
+      alert("Batch updated successfully!");
+      navigate("/admin/batches");
+    } catch (error) {
+      setFormErrors({ form: error.message });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // The rest of the component is very similar to CreateBatchPage
+  // It uses the same logic for the searchable subject dropdown
   const filteredAvailableSubjects = allAvailableSubjects.filter(
     (subject) =>
       (subject.name.toLowerCase().includes(subjectSearchTerm.toLowerCase()) ||
@@ -64,7 +142,6 @@ const CreateBatchPage = () => {
   const handleSubjectSelect = (subject) => {
     setSelectedSubjects([...selectedSubjects, subject]);
     setSubjectSearchTerm("");
-    setIsSubjectDropdownOpen(false);
   };
 
   const handleRemoveSelectedSubject = (subjectIdToRemove) => {
@@ -75,116 +152,38 @@ const CreateBatchPage = () => {
     );
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (
-        subjectDropdownRef.current &&
-        !subjectDropdownRef.current.contains(event.target)
-      ) {
-        setIsSubjectDropdownOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const validateForm = () => {
-    // ... validation logic remains the same
-    const errors = {};
-    if (!program.trim()) errors.program = "Program is required.";
-    if (!branch.trim()) errors.branch = "Branch is required.";
-    if (!startYear.toString().trim() || !/^\d{4}$/.test(startYear))
-      errors.startYear = "A valid 4-digit start year is required.";
-    if (!section.trim()) errors.section = "Section is required.";
-    if (
-      !semesterNumber.trim() ||
-      isNaN(semesterNumber) ||
-      Number(semesterNumber) <= 0
-    )
-      errors.semesterNumber = "A valid semester number is required.";
-    if (selectedSubjects.length === 0)
-      errors.subjects = "At least one subject must be assigned.";
-    setFormErrors(errors);
-    return Object.keys(errors).length === 0;
-  };
-
-  // --- MODIFIED: This function now sends data to the backend ---
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setFormErrors({}); // Clear previous errors
-    if (!validateForm()) return;
-
-    setIsLoading(true);
-    const token = localStorage.getItem("authToken");
-
-    const batchData = {
-      name: generatedBatchName,
-      academic_year: parseInt(startYear, 10),
-      semester_number: parseInt(semesterNumber, 10),
-      department: branch,
-      subject_ids: selectedSubjects.map((s) => s.subject_id),
-    };
-
-    try {
-      const response = await fetch("http://localhost:3000/api/batches", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(batchData),
-      });
-
-      const responseData = await response.json();
-
-      if (!response.ok) {
-        // Use the error message from the backend if available
-        throw new Error(responseData.msg || `Server error: ${response.status}`);
-      }
-
-      alert("Batch created successfully!");
-      navigate("/admin/batches"); // Navigate back to the list page
-    } catch (error) {
-      console.error("Batch creation failed:", error);
-      setFormErrors({ form: error.message }); // Display form-wide error
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  if (isDataLoading)
+    return <div className="text-center p-10">Loading batch data...</div>;
 
   return (
     <div className="bg-white shadow-xl rounded-xl p-6 sm:p-8 lg:p-10">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-slate-800">Create New Batch</h1>
+        <h1 className="text-3xl font-bold text-slate-800">Edit Batch</h1>
         <p className="mt-1 text-slate-600">
-          Define the details and curriculum for a new academic batch.
+          Update the details and curriculum for this batch.
         </p>
       </div>
-
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Display general form error */}
         {formErrors.form && (
           <div className="p-3 bg-red-100 text-red-700 rounded-md text-sm">
             {formErrors.form}
           </div>
         )}
 
-        {/* Form inputs remain the same as before */}
+        {/* The form structure is identical to CreateBatchPage, but fields are pre-filled */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div>
             <label
               htmlFor="program"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              Program <span className="text-red-500">*</span>
+              Program
             </label>
             <select
               id="program"
               value={program}
               onChange={(e) => setProgram(e.target.value)}
-              className={`block w-full input ${
-                formErrors.program ? "input-error" : ""
-              }`}
+              className="block w-full input"
             >
               <option value="B.Tech">B.Tech</option>
               <option value="M.Tech">M.Tech</option>
@@ -197,17 +196,14 @@ const CreateBatchPage = () => {
               htmlFor="branch"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              Branch/Dept <span className="text-red-500">*</span>
+              Branch/Dept
             </label>
             <input
               type="text"
               id="branch"
               value={branch}
               onChange={(e) => setBranch(e.target.value)}
-              placeholder="e.g., CSE"
-              className={`block w-full input ${
-                formErrors.branch ? "input-error" : ""
-              }`}
+              className="block w-full input"
             />
           </div>
           <div>
@@ -215,17 +211,14 @@ const CreateBatchPage = () => {
               htmlFor="startYear"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              Start Year <span className="text-red-500">*</span>
+              Start Year
             </label>
             <input
               type="number"
               id="startYear"
               value={startYear}
               onChange={(e) => setStartYear(e.target.value)}
-              placeholder="YYYY"
-              className={`block w-full input ${
-                formErrors.startYear ? "input-error" : ""
-              }`}
+              className="block w-full input"
             />
           </div>
           <div>
@@ -233,21 +226,17 @@ const CreateBatchPage = () => {
               htmlFor="section"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              Section <span className="text-red-500">*</span>
+              Section
             </label>
             <input
               type="text"
               id="section"
               value={section}
               onChange={(e) => setSection(e.target.value)}
-              placeholder="e.g., A"
-              className={`block w-full input ${
-                formErrors.section ? "input-error" : ""
-              }`}
+              className="block w-full input"
             />
           </div>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label
@@ -258,10 +247,9 @@ const CreateBatchPage = () => {
             </label>
             <input
               type="text"
-              id="generatedName"
               value={generatedBatchName}
               readOnly
-              className="block w-full input bg-slate-100 cursor-not-allowed"
+              className="block w-full input bg-slate-100"
             />
           </div>
           <div>
@@ -269,79 +257,54 @@ const CreateBatchPage = () => {
               htmlFor="semesterNumber"
               className="block text-sm font-medium text-slate-700 mb-1"
             >
-              Semester Number <span className="text-red-500">*</span>
+              Semester
             </label>
             <input
               type="number"
               id="semesterNumber"
               value={semesterNumber}
               onChange={(e) => setSemesterNumber(e.target.value)}
-              placeholder="e.g., 3"
-              min="1"
-              max="10"
-              className={`block w-full input ${
-                formErrors.semesterNumber ? "input-error" : ""
-              }`}
+              className="block w-full input"
             />
           </div>
         </div>
-
-        {/* The rest of the JSX remains the same... */}
         <div ref={subjectDropdownRef} className="pt-2">
           <label
             htmlFor="subjectSearch"
             className="block text-sm font-medium text-slate-700 mb-1"
           >
-            Assign Subjects <span className="text-red-500">*</span>
+            Assign Subjects
           </label>
           <div className="relative">
             <input
               type="text"
               id="subjectSearch"
-              placeholder="Search by subject name or code..."
+              placeholder="Search to add subjects..."
               value={subjectSearchTerm}
               onChange={(e) => {
                 setSubjectSearchTerm(e.target.value);
                 setIsSubjectDropdownOpen(true);
               }}
               onFocus={() => setIsSubjectDropdownOpen(true)}
-              className={`block w-full input pr-10 ${
-                formErrors.subjects ? "input-error" : ""
-              }`}
-              disabled={isSubjectsLoading}
+              className="block w-full input pr-10"
             />
-            {isSubjectsLoading ? (
-              <div className="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-md p-3 text-sm text-slate-500">
-                Loading subjects...
+            {isSubjectDropdownOpen && (
+              <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                {filteredAvailableSubjects.map((subject) => (
+                  <div
+                    key={subject.subject_id}
+                    onClick={() => handleSubjectSelect(subject)}
+                    className="cursor-pointer select-none relative py-2 pl-3 pr-9 text-slate-900 hover:bg-indigo-600 hover:text-white"
+                  >
+                    <span className="block truncate">
+                      {subject.name} ({subject.code})
+                    </span>
+                  </div>
+                ))}
               </div>
-            ) : formErrors.subjects ? (
-              <p className="mt-1 text-xs text-red-500">{formErrors.subjects}</p>
-            ) : (
-              isSubjectDropdownOpen && (
-                <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
-                  {filteredAvailableSubjects.length > 0 ? (
-                    filteredAvailableSubjects.map((subject) => (
-                      <div
-                        key={subject.subject_id}
-                        onClick={() => handleSubjectSelect(subject)}
-                        className="cursor-pointer select-none relative py-2 pl-3 pr-9 text-slate-900 hover:bg-indigo-600 hover:text-white"
-                      >
-                        <span className="block truncate">
-                          {subject.name} ({subject.code})
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="cursor-default select-none relative py-2 px-3 text-slate-700">
-                      No subjects found.
-                    </div>
-                  )}
-                </div>
-              )
             )}
           </div>
         </div>
-
         {selectedSubjects.length > 0 && (
           <div className="mt-3 p-4 bg-slate-50 rounded-lg border">
             <p className="text-sm font-medium text-slate-700 mb-2">
@@ -360,7 +323,6 @@ const CreateBatchPage = () => {
                       handleRemoveSelectedSubject(subject.subject_id)
                     }
                     className="ml-2 text-indigo-500 hover:text-indigo-700 focus:outline-none"
-                    aria-label={`Remove ${subject.name}`}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -382,22 +344,16 @@ const CreateBatchPage = () => {
             </div>
           </div>
         )}
-
         <div className="flex items-center justify-end space-x-4 pt-4 border-t border-slate-200 mt-8">
-          <button
-            type="button"
-            onClick={() => navigate("/admin/batches")}
-            className="btn btn-secondary"
-            disabled={isLoading}
-          >
+          <Link to="/admin/batches" className="btn btn-secondary">
             Cancel
-          </button>
+          </Link>
           <button
             type="submit"
             className="btn btn-primary"
             disabled={isLoading}
           >
-            {isLoading ? "Submitting..." : "Create Batch"}
+            {isLoading ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </form>
@@ -405,4 +361,4 @@ const CreateBatchPage = () => {
   );
 };
 
-export default CreateBatchPage;
+export default EditBatchPage;

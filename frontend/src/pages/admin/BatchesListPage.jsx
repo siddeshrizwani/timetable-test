@@ -1,8 +1,7 @@
 // src/pages/admin/BatchesListPage.jsx
-import React, { useState, useMemo, useEffect } from "react"; // Added useEffect
-import { Link, useNavigate } from "react-router-dom"; // Added useNavigate
+import React, { useState, useEffect, useCallback } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
-// Placeholder Search Icon
 const SearchIcon = () => (
   <svg
     className="w-5 h-5 text-slate-400"
@@ -19,237 +18,230 @@ const SearchIcon = () => (
     ></path>
   </svg>
 );
+const RefreshIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <polyline points="23 4 23 10 17 10"></polyline>
+    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+  </svg>
+);
 
-// Placeholder data - expanded for pagination testing
-const initialBatchesData = [
-  { id: 1, name: "Batch A - 2024 CSE Sem 1" },
-  { id: 2, name: "Batch B - 2024 ECE Sem 1" },
-  { id: 3, name: "Batch C - 2023 MECH Sem 3" },
-  { id: 4, name: "Batch D - 2024 CSE Sem 2 Evening" },
-  { id: 5, name: "Batch E - 2023 ECE Sem 3 Part-time" },
-  { id: 6, name: "Batch F - 2022 CSE Sem 5" },
-  { id: 7, name: "Batch G - 2024 IT Sem 1" },
-  { id: 8, name: "Batch H - 2023 CIVIL Sem 3" },
-  { id: 9, name: "Batch I - 2022 EEE Sem 5" },
-  { id: 10, name: "Batch J - 2024 CSE Sem 1 Section B" },
-  { id: 11, name: "Batch K - 2023 MECH Sem 4" },
-  { id: 12, name: "Batch L - 2024 IT Sem 2" },
-];
-
-const ITEMS_PER_PAGE = 5;
+const ITEMS_PER_PAGE = 10;
 
 const BatchesListPage = () => {
-  const navigate = useNavigate(); // For navigation for view/edit (optional)
+  const navigate = useNavigate();
+  const [allBatches, setAllBatches] = useState([]);
+  const [filteredBatches, setFilteredBatches] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  // This state will hold all batches that match the current search term (or all batches if no search)
-  const [displayableBatches, setDisplayableBatches] =
-    useState(initialBatchesData);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Handle initial data and search filtering
-  useEffect(() => {
-    let filtered = initialBatchesData;
-    if (searchTerm) {
-      filtered = initialBatchesData.filter((batch) =>
-        batch.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+  const fetchBatches = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    const token = localStorage.getItem("authToken");
+    if (!token) {
+      navigate("/login");
+      return;
     }
-    setDisplayableBatches(filtered);
-    setCurrentPage(1); // Reset to first page whenever search term changes
-  }, [searchTerm]); // Removed initialBatchesData from dependency array if it's static
+    try {
+      const response = await fetch("http://localhost:3000/api/batches", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-  // Calculate current items for display based on pagination
-  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
-  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
-  const currentBatchesOnPage = displayableBatches.slice(
-    indexOfFirstItem,
-    indexOfLastItem
-  );
-
-  const totalPages = Math.ceil(displayableBatches.length / ITEMS_PER_PAGE);
-
-  const handleSearchChange = (event) => {
-    setSearchTerm(event.target.value);
-  };
-
-  const handleNextPage = () => {
-    setCurrentPage((prevPage) => Math.min(prevPage + 1, totalPages));
-  };
-
-  const handlePreviousPage = () => {
-    setCurrentPage((prevPage) => Math.max(prevPage - 1, 1));
-  };
-
-  const handleViewBatch = (batchId) => {
-    alert(`View batch with ID: ${batchId}`);
-    // navigate(`/admin/batches/view/${batchId}`); // Example navigation
-  };
-
-  const handleEditBatch = (batchId) => {
-    alert(`Edit batch with ID: ${batchId}`);
-    // navigate(`/admin/batches/edit/${batchId}`); // Example navigation
-  };
-
-  const handleDeleteBatch = (batchId) => {
-    if (
-      window.confirm(
-        `Are you sure you want to delete batch with ID: ${batchId}? This action cannot be undone.`
-      )
-    ) {
-      // --- IMPORTANT ---
-      // This is a LOCAL state update for DEMO purposes.
-      // In a real app, you MUST:
-      // 1. Call your backend API to delete the batch from the database.
-      // 2. On successful deletion from backend, THEN update your frontend state.
-      //    This usually involves refetching the list of batches or removing the item
-      //    from a global state management solution (like Redux, Zustand, React Context).
-      //    For now, we'll filter `initialBatchesData` to simulate this if it were mutable,
-      //    or more simply, just filter the `displayableBatches` if you don't want to alter initial data.
-
-      // Simulating deletion by filtering the source array (not ideal for real apps without backend)
-      // initialBatchesData = initialBatchesData.filter(batch => batch.id !== batchId); // This would mutate if not const
-      // For demo, let's just filter the current displayable and re-trigger pagination logic
-      const newDisplayableBatches = displayableBatches.filter(
-        (batch) => batch.id !== batchId
-      );
-      setDisplayableBatches(newDisplayableBatches);
-
-      // Adjust current page if the last item on the page was deleted
-      const newTotalPages = Math.ceil(
-        newDisplayableBatches.length / ITEMS_PER_PAGE
-      );
-      if (currentPage > newTotalPages && newTotalPages > 0) {
-        setCurrentPage(newTotalPages);
-      } else if (newTotalPages === 0) {
-        setCurrentPage(1);
+      // --- MODIFIED: Improved Error Handling ---
+      if (!response.ok) {
+        if (response.status === 401 || response.status === 403) {
+          throw new Error(
+            "Authorization failed. Please ensure you are logged in as an admin."
+          );
+        }
+        throw new Error(
+          `Failed to fetch batches. Server responded with status: ${response.status}`
+        );
       }
 
-      console.log(`Simulated deletion of batch with ID: ${batchId}`);
-      alert(`Batch with ID: ${batchId} 'deleted' (locally filtered for demo).`);
+      const data = await response.json();
+      setAllBatches(data);
+      setFilteredBatches(data); // Set filtered batches initially
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    fetchBatches();
+  }, [fetchBatches]);
+
+  useEffect(() => {
+    const results = allBatches.filter((b) =>
+      b.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+    setFilteredBatches(results);
+    setCurrentPage(1);
+  }, [searchTerm, allBatches]);
+
+  const currentBatchesOnPage = filteredBatches.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+  const totalPages = Math.ceil(filteredBatches.length / ITEMS_PER_PAGE);
+
+  const handleDeleteBatch = async (batchId, batchName) => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete the batch "${batchName}"? This action cannot be undone.`
+      )
+    ) {
+      const token = localStorage.getItem("authToken");
+      try {
+        const response = await fetch(
+          `http://localhost:3000/api/batches/${batchId}`,
+          {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(errorText || "Failed to delete batch.");
+        }
+
+        const resData = await response.json();
+        alert(resData.msg || "Batch deleted successfully!");
+        fetchBatches();
+      } catch (error) {
+        console.error("Delete failed:", error);
+        alert(`Error: ${error.message}`);
+      }
     }
   };
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-slate-800">
-          Batches Management
-        </h1>
-        <p className="mt-1 text-slate-600">
-          Manage your academic batches and their settings.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-800">
+            Batches Management
+          </h1>
+          <p className="mt-1 text-slate-600">
+            View, create, and manage all academic batches.
+          </p>
+        </div>
+        <Link to="/admin/batches/new" className="btn btn-primary">
+          Create New Batch
+        </Link>
       </div>
-
-      {/* Search and Actions Bar */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div className="relative w-full sm:w-auto sm:max-w-xs">
+      <div className="flex justify-between items-center">
+        <div className="relative sm:max-w-xs w-full">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <SearchIcon />
           </div>
           <input
             type="text"
-            name="search-batches"
-            id="search-batches"
-            className="block w-full pl-10 pr-3 py-2.5 border border-slate-300 rounded-lg shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors"
-            placeholder="Search batches"
+            placeholder="Search batches..."
             value={searchTerm}
-            onChange={handleSearchChange}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="input pl-10 w-full"
           />
         </div>
-        <div className="flex space-x-3 w-full sm:w-auto">
-          <Link
-            to="/admin/batches/new"
-            className="w-full sm:w-auto flex justify-center items-center px-6 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-[#034078] hover:bg-[#001F54] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#034078] transition-colors"
-          >
-            Create Batch
-          </Link>
-        </div>
+        <button
+          onClick={fetchBatches}
+          className="btn btn-secondary flex items-center gap-2"
+          title="Refresh list"
+        >
+          <RefreshIcon />
+          Refresh
+        </button>
       </div>
-
-      {/* Batches Table/List */}
       <div className="bg-white shadow-xl rounded-lg overflow-hidden">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200">
             <thead className="bg-slate-50">
               <tr>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider"
-                >
-                  Batch Name
-                </th>
-                <th
-                  scope="col"
-                  className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider" // Adjusted padding from px-17
-                >
-                  Actions{" "}
-                </th>
+                <th className="th">Batch Name</th>
+                <th className="th">Department</th>
+                <th className="th">Semester</th>
+                <th className="th">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-slate-200">
-              {currentBatchesOnPage.length > 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan="4" className="td text-center">
+                    Loading...
+                  </td>
+                </tr>
+              ) : error ? (
+                <tr>
+                  <td colSpan="4" className="td text-center text-red-500">
+                    {error}
+                  </td>
+                </tr>
+              ) : currentBatchesOnPage.length > 0 ? (
                 currentBatchesOnPage.map((batch) => (
-                  <tr
-                    key={batch.id}
-                    className="hover:bg-slate-50 transition-colors"
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-900">
-                      {batch.name}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                      <button
-                        onClick={() => handleViewBatch(batch.id)}
-                        title="View Details"
-                        className="text-indigo-600 hover:text-indigo-800 cursor-pointer transition-colors p-1 rounded hover:bg-indigo-100"
-                      >
-                        <img
-                          src="/src/assets/icons/eye2.svg" // Ensure this path is correct or use text/SVG
-                          alt="View"
-                          className="w-5 h-5 inline"
-                        />
-                      </button>
-                      <button
-                        onClick={() => handleEditBatch(batch.id)}
-                        title="Edit Batch"
-                        className="text-sky-600 hover:text-sky-800 cursor-pointer transition-colors p-1 rounded hover:bg-sky-100"
-                      >
-                        <img
-                          src="/src/assets/icons/pencil.svg" // Ensure this path is correct
-                          alt="Edit"
-                          className="w-5 h-5 inline"
-                        />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBatch(batch.id)}
-                        title="Delete Batch"
-                        className="text-red-600 hover:text-red-800 cursor-pointer transition-colors p-1 rounded hover:bg-red-100"
-                      >
-                        <img
-                          src="/src/assets/icons/trash-2.svg" // Ensure this path is correct
-                          alt="Delete"
-                          className="w-5 h-5 inline"
-                        />
-                      </button>
+                  <tr key={batch.batch_id} className="hover:bg-slate-50">
+                    <td className="td font-medium">{batch.name}</td>
+                    <td className="td">{batch.department}</td>
+                    <td className="td">{batch.semester_number}</td>
+                    <td className="td">
+                      <div className="flex items-center space-x-2">
+                        <Link
+                          to={`/admin/batches/${batch.batch_id}`}
+                          title="View"
+                          className="p-2 text-slate-500 hover:text-indigo-600 rounded-full hover:bg-indigo-50"
+                        >
+                          <img
+                            src="/src/assets/icons/eye2.svg"
+                            alt="View"
+                            className="w-5 h-5"
+                          />
+                        </Link>
+                        <Link
+                          to={`/admin/batches/edit/${batch.batch_id}`}
+                          title="Edit"
+                          className="p-2 text-slate-500 hover:text-sky-600 rounded-full hover:bg-sky-50"
+                        >
+                          <img
+                            src="/src/assets/icons/pencil.svg"
+                            alt="Edit"
+                            className="w-5 h-5"
+                          />
+                        </Link>
+                        <button
+                          onClick={() =>
+                            handleDeleteBatch(batch.batch_id, batch.name)
+                          }
+                          title="Delete"
+                          className="p-2 text-slate-500 hover:text-red-600 rounded-full hover:bg-red-50"
+                        >
+                          <img
+                            src="/src/assets/icons/trash-2.svg"
+                            alt="Delete"
+                            className="w-5 h-5"
+                          />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan="2"
-                    className="px-6 py-12 text-center text-sm text-slate-500"
-                  >
-                    {searchTerm
-                      ? "No batches found matching your search."
-                      : "No batches available."}
-                    {!searchTerm && displayableBatches.length === 0 && (
-                      <Link
-                        to="/admin/batches/new"
-                        className="text-indigo-600 hover:underline ml-1"
-                      >
-                        Create one now
-                      </Link>
-                    )}
+                  <td colSpan="4" className="td text-center">
+                    No batches found.
                   </td>
                 </tr>
               )}
@@ -257,34 +249,23 @@ const BatchesListPage = () => {
           </table>
         </div>
       </div>
-
-      {/* Pagination Controls */}
-      {totalPages > 0 && (
-        <div className="mt-6 flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center mt-6">
           <p className="text-sm text-slate-700">
-            Showing{" "}
-            <span className="font-medium">
-              {Math.min(indexOfFirstItem + 1, displayableBatches.length)}
-            </span>{" "}
-            to{" "}
-            <span className="font-medium">
-              {Math.min(indexOfLastItem, displayableBatches.length)}
-            </span>{" "}
-            of <span className="font-medium">{displayableBatches.length}</span>{" "}
-            results
+            Page {currentPage} of {totalPages}
           </p>
-          <div className="flex space-x-1">
+          <div className="flex space-x-2">
             <button
-              onClick={handlePreviousPage}
+              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
               disabled={currentPage === 1}
-              className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="btn btn-secondary"
             >
               Previous
             </button>
             <button
-              onClick={handleNextPage}
-              disabled={currentPage === totalPages || totalPages === 0}
-              className="px-4 py-2 border border-slate-300 rounded-md text-sm font-medium text-slate-700 hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
+              disabled={currentPage === totalPages}
+              className="btn btn-secondary"
             >
               Next
             </button>
