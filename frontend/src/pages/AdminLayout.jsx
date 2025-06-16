@@ -2,11 +2,23 @@
 import React from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 
-
-// Icons
-const AnalyticsIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H9a2 2 0 01-2-2V5z" /></svg>);
-// ... (Other icons remain the same)
-// SVG Icon Components for a professional look
+// SVG Icon Components
+const AnalyticsIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    className="h-5 w-5 mr-3"
+    fill="none"
+    viewBox="0 0 24 24"
+    stroke="currentColor"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H9a2 2 0 01-2-2V5z"
+    />
+  </svg>
+);
 const DashboardIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -128,10 +140,15 @@ const AdminLayout = ({ user, onLogout }) => {
         <div className="px-6 py-5 border-b border-slate-200">
           <h1 className="text-2xl font-bold text-indigo-700">Time Table</h1>
         </div>
+        {/* --- FIX: The <nav> section is now clean with no duplicates --- */}
         <nav className="flex-grow p-4 space-y-2">
           <NavLink to="/admin/dashboard" className={navLinkClasses} end>
             <DashboardIcon />
             Dashboard
+          </NavLink>
+          <NavLink to="/admin/analytics" className={navLinkClasses}>
+            <AnalyticsIcon />
+            Analytics
           </NavLink>
           <NavLink to="/admin/batches" className={navLinkClasses}>
             <BatchesIcon />
@@ -153,31 +170,6 @@ const AdminLayout = ({ user, onLogout }) => {
             <TimetableIcon />
             View Timetable
           </NavLink>
-
-          <nav className="flex-grow p-4 space-y-2">
-            <NavLink to="/admin/dashboard" className={navLinkClasses} end>
-              Dashboard
-            </NavLink>
-            <NavLink to="/admin/analytics" className={navLinkClasses}>
-              <AnalyticsIcon />
-              Analytics
-            </NavLink>
-            <NavLink to="/admin/batches" className={navLinkClasses}>
-              Batches
-            </NavLink>
-            <NavLink to="/admin/subjects" className={navLinkClasses}>
-              Subjects
-            </NavLink>
-            <NavLink to="/admin/teachers" className={navLinkClasses}>
-              Teachers
-            </NavLink>
-            <NavLink to="/admin/rooms" className={navLinkClasses}>
-              Rooms
-            </NavLink>
-            <NavLink to="/admin/timetable" className={navLinkClasses}>
-              View Timetable
-            </NavLink>
-          </nav>
         </nav>
         <div className="p-4 border-t border-slate-200">
           <button
@@ -207,7 +199,6 @@ const AdminLayout = ({ user, onLogout }) => {
           <UserAvatar user={user} />
         </header>
         <main className="flex-1 p-6 overflow-y-auto">
-          {/* This passes the user data down to all child routes (like the dashboard) */}
           <Outlet context={{ user }} />
         </main>
       </div>

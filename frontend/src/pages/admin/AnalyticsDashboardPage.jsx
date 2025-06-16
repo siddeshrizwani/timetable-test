@@ -13,7 +13,6 @@ import {
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 
-// Register the necessary components for Chart.js
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -62,7 +61,6 @@ const AnalyticsDashboardPage = () => {
           responses.map((r) => r.json())
         );
 
-        // Prepare data for charts
         setTeacherWorkload({
           labels: teacherData.map((d) => d.teacher_name),
           datasets: [

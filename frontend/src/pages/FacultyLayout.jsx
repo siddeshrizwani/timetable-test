@@ -1,8 +1,9 @@
-// src/pages/FacultyLayout.jsx
+// frontend/src/pages/FacultyLayout.jsx
 import React from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext"; // --- FIX: Import the useAuth hook ---
 
-// SVG Icon Components
+// --- EXISTING CODE: Your SVG Icon components (no changes needed here) ---
 const ScheduleIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -57,12 +58,18 @@ const UserAvatar = ({ user }) => (
   </div>
 );
 
-const FacultyLayout = ({ user, onLogout }) => {
+// --- UPDATED COMPONENT ---
+const FacultyLayout = () => {
+  // --- FIX: Get user and logout function directly from AuthContext ---
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  // --- FIX: This handler now calls the 'logout' function from context ---
   const handleLogoutClick = () => {
-    onLogout();
+    logout();
     navigate("/login");
   };
+
   const navLinkClasses = ({ isActive }) =>
     `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-150 ${
       isActive
@@ -105,7 +112,7 @@ const FacultyLayout = ({ user, onLogout }) => {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth="2"
                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
               />
             </svg>
@@ -116,12 +123,15 @@ const FacultyLayout = ({ user, onLogout }) => {
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-white shadow-sm h-16 flex items-center justify-between px-8">
           <h2 className="text-xl font-semibold text-slate-800">
-            Welcome, {user?.username || "Faculty"}
+            {/* --- FIX: Use user object from context --- */}
+            Welcome, {user?.username || user?.email || "Faculty"}
           </h2>
+          {/* --- FIX: Use user object from context --- */}
           <UserAvatar user={user} />
         </header>
         <div className="flex-1 p-6 overflow-y-auto">
-          <Outlet context={{ user }} />
+          {/* --- FIX: Outlet no longer needs context passed this way --- */}
+          <Outlet />
         </div>
       </main>
     </div>
