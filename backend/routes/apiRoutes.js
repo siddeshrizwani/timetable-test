@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs")
 const pool = require("../config/db");
 const { spawn } = require("child_process");
 
@@ -254,25 +254,51 @@ router.get("/teachers", async (req, res) => {
 
 router.post("/teachers", async (req, res) => {
   const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res
+      .status(400)
+      .json({ msg: "Please provide name, email, and password." });
+  }
+
   const client = await pool.connect();
+
   try {
+    const existingUser = await client.query(
+      "SELECT * FROM users WHERE email = $1",
+      [email]
+    );
+    if (existingUser.rows.length > 0) {
+      return res
+        .status(400)
+        .json({ msg: "A user with this email already exists." });
+    }
+
     await client.query("BEGIN");
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const userRes = await client.query(
-      "INSERT INTO users (username, email, password_hash, role_id, provider, requires_password_change) VALUES ($1, $2, $3, 3, 'local', TRUE) RETURNING id",
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Insert into the 'users' table
+    const newUserResult = await client.query(
+      "INSERT INTO users (username, email, password, role_id, provider) VALUES ($1, $2, $3, 3, 'local') RETURNING id",
       [name, email, hashedPassword]
     );
-    const teacherRes = await client.query(
-      "INSERT INTO teachers (name, email, user_id) VALUES ($1, $2, $3) RETURNING *",
-      [name, email, userRes.rows[0].id]
+    const userId = newUserResult.rows[0].id;
+
+    // Insert into the 'teachers' table, linking by the new user_id
+    await client.query(
+      "INSERT INTO teachers (user_id, name, email) VALUES ($1, $2, $3)",
+      [userId, name, email]
     );
+
     await client.query("COMMIT");
-    res.status(201).json(teacherRes.rows[0]);
-  } catch (err) {
+
+    res.status(201).json({ msg: "Teacher created successfully." });
+  } catch (error) {
     await client.query("ROLLBACK");
-    if (err.code === "23505")
-      return res.status(409).json({ msg: "This email is already registered." });
-    res.status(500).json({ msg: "Server error" });
+    console.error("Error creating teacher:", error);
+    res.status(500).json({ msg: "Server error while creating teacher." });
   } finally {
     client.release();
   }
