@@ -1,8 +1,8 @@
 // src/pages/AdminLayout.jsx
-import React, { useState } from "react";
+import React from "react";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 
-// SVG Icon Components for better visuals
+// SVG Icon Components for a professional look
 const DashboardIcon = () => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -111,7 +111,6 @@ const AdminLayout = ({ user, onLogout }) => {
     onLogout();
     navigate("/login");
   };
-
   const navLinkClasses = ({ isActive }) =>
     `flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-colors duration-150 ${
       isActive
@@ -166,7 +165,7 @@ const AdminLayout = ({ user, onLogout }) => {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth="2"
+                strokeWidth={2}
                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
               />
             </svg>
@@ -179,7 +178,8 @@ const AdminLayout = ({ user, onLogout }) => {
           <UserAvatar user={user} />
         </header>
         <main className="flex-1 p-6 overflow-y-auto">
-          <Outlet />
+          {/* This passes the user data down to all child routes (like the dashboard) */}
+          <Outlet context={{ user }} />
         </main>
       </div>
     </div>

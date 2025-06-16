@@ -1,0 +1,66 @@
+{
+  "config": {
+    "num_days": 5,
+    "slots_per_day": 8,
+    "morning_slots_count": 4,
+    "evening_slots_start_idx": 4,
+    "max_daily_hours_soft": 6,
+    "max_consecutive_lecture_hours": 2,
+    "solver_max_time_seconds": 30
+  },
+  "subjects": [
+    {
+      "id": "CS101", "name": "Introduction to Programming", "type": "LecLab", 
+      "lec_hr": 3, "lab_hr": 2,
+      "lec_teacher_id": "T01", "lab_teacher_id": "T02",
+      "lec_room_id": "R101", "lab_room_id": "LabA"
+    },
+    {
+      "id": "MA201", "name": "Calculus I", "type": "LecOnly", "lec_hr": 3,
+      "teacher_id": "T03", "room_id": "R102"
+    },
+    {
+      "id": "MA202", "name": "Calculus II", "type": "LecOnly", "lec_hr": 3,
+      "teacher_id": "T03", "room_id": "R102"
+    },
+    {
+      "id": "PH202", "name": "Physics for Engineers", "type": "LecLab", 
+      "lec_hr": 2, "lab_hr": 2,
+      "lec_teacher_id": "T04", "lab_teacher_id": "T04",
+      "lec_room_id": "R103", "lab_room_id": "LabB"
+    },
+    {
+      "id": "HU301", "name": "Ethics in Technology", "type": "LecOnly", "lec_hr": 2,
+      "teacher_id": "T05", "room_id": "R101"
+    },
+    {
+      "id": "EE205", "name": "Digital Circuits", "type": "LecLab", 
+      "lec_hr": 3, "lab_hr": 2,
+      "lec_teacher_id": "T06", "lab_teacher_id": "T06",
+      "lec_room_id": "R201", "lab_room_id": "LabC"
+    },
+    {
+      "id": "CS102", "name": "Introduction to Programming", "type": "LecLab", 
+      "lec_hr": 3, "lab_hr": 2,
+      "lec_teacher_id": "T01", "lab_teacher_id": "T02",
+      "lec_room_id": "R101", "lab_room_id": "LabA"
+    }
+  ],
+  "teachers": [
+    {"id": "T01", "name": "Dr. Ada Lovelace"},
+    {"id": "T02", "name": "Prof. Charles Babbage"},
+    {"id": "T03", "name": "Dr. Isaac Newton"},
+    {"id": "T04", "name": "Prof. Marie Curie"},
+    {"id": "T05", "name": "Dr. Alan Turing"},
+    {"id": "T06", "name": "Prof. Grace Hopper"}
+  ],
+  "rooms": [
+    {"id": "R101", "name": "Lecture Hall 101", "capacity": 50},
+    {"id": "R102", "name": "Lecture Hall 102", "capacity": 50},
+    {"id": "R103", "name": "Lecture Hall 103", "capacity": 40},
+    {"id": "R201", "name": "Lecture Hall 201", "capacity": 45},
+    {"id": "LabA", "name": "Computer Lab A", "type": "Lab", "capacity": 25},
+    {"id": "LabB", "name": "Physics Lab B", "type": "Lab", "capacity": 20},
+    {"id": "LabC", "name": "Electronics Lab C", "type": "Lab", "capacity": 20}
+  ]
+}

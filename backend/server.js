@@ -1,58 +1,50 @@
+// backend/server.js
 const express = require("express");
-const pg = require("pg");
 const dotenv = require("dotenv");
-const { Pool } = pg;
 const cors = require("cors");
+const passport = require("passport");
+const session = require("express-session");
 
 dotenv.config();
+require("./config/passport-setup");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// PostgreSQL connection pool
-const pool = new Pool({
-  user: process.env.DB_USER || "timetable",
-  host: process.env.DB_HOST || "localhost",
-  database: process.env.DB_DATABASE || "TimeTable",
-  password: process.env.DB_PASSWORD || "admin",
-  port: process.env.DB_PORT || 5432,
-});
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:5174",
+    credentials: true,
+  })
+);
+app.use(express.json());
 
-// Export pool for use in other files
-module.exports = { pool };
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || "a_very_secret_session_key",
+    resave: false,
+    saveUninitialized: false,
+  })
+);
+app.use(passport.initialize());
+app.use(passport.session());
 
-// Middleware Imports
+// Route Imports
+const authRoutes = require("./routes/auth");
+const apiRoutes = require("./routes/apiRoutes");
+const profileRoutes = require("./routes/profileRoutes");
+const facultyRoutes = require("./routes/facultyRoutes");
 const {
   authenticateToken,
   authorizeAdmin,
 } = require("./middleware/authMiddleware");
 
-// Route Imports
-const authRoutes = require("./routes/auth");
-const apiRoutes = require("./routes/apiRoutes"); // <-- NEW: Import API routes
-
-// General Middleware
-app.use(cors());
-app.use(express.json());
-
-// --- Mount Route Handlers ---
+// Mount Routes
 app.use("/api/auth", authRoutes);
-
-// NEW: Mount protected API routes for admin data
-// Any request to /api/* will first be checked for a valid token,
-// then for admin role, before being passed to apiRoutes.
+app.use("/api/profile", authenticateToken, profileRoutes);
+app.use("/api/faculty", authenticateToken, facultyRoutes);
 app.use("/api", authenticateToken, authorizeAdmin, apiRoutes);
 
-// --- Server Startup ---
 app.listen(PORT, () =>
   console.log(`Server is running on http://localhost:${PORT}`)
 );
-
-// --- Old Example Routes (Can be removed later) ---
-app.get("/", (req, res) => {
-  res.send({ msg: "Hello, World!" });
-});
-
-app.get("/admin/dashboard", authenticateToken, authorizeAdmin, (req, res) => {
-  res.send({ msg: `Welcome to the admin dashboard, ${req.user.username}!` });
-});

@@ -1,95 +1,235 @@
 // src/pages/admin/AdminDashboardOverview.jsx
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useOutletContext } from "react-router-dom";
 
-// Placeholder Icon components (replace with actual SVGs or an icon library if desired)
-const BatchesIcon = () => <span className="text-3xl">📚</span>;
-const SubjectsIcon = () => <span className="text-3xl">📖</span>;
-const SettingsIcon = () => <span className="text-3xl">⚙️</span>;
+const StatCard = ({ title, value, icon, color }) => (
+  <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-slate-500 uppercase tracking-wider">
+          {title}
+        </p>
+        <p className="text-3xl font-bold text-slate-900">{value}</p>
+      </div>
+      <div className={`p-3 rounded-full ${color}`}>
+        <span className="text-3xl">{icon}</span>
+      </div>
+    </div>
+  </div>
+);
 
-const AdminDashboardOverview = ({ user }) => {
+const AdminDashboardOverview = () => {
+  const { user } = useOutletContext();
+  const [stats, setStats] = useState(null);
+  const [batches, setBatches] = useState([]);
+
+  // State for the solver control panel
+  const [selectedBatch, setSelectedBatch] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatorStatus, setGeneratorStatus] = useState({
+    message: "",
+    type: "",
+  });
+
+  // Fetch initial data for stats and the batch dropdown
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    const fetchData = async (url) => {
+      const response = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) throw new Error(`Failed to fetch from ${url}`);
+      return response.json();
+    };
+
+    // Fetch both stats and the list of batches
+    Promise.all([
+      fetchData("http://localhost:3000/api/stats"),
+      fetchData("http://localhost:3000/api/batches"),
+    ])
+      .then(([statsData, batchesData]) => {
+        setStats(statsData);
+        setBatches(batchesData);
+        // Default the dropdown to the first batch in the list
+        if (batchesData.length > 0) {
+          setSelectedBatch(batchesData[0].batch_id);
+        }
+      })
+      .catch((err) => {
+        console.error("Dashboard data fetching error:", err);
+        setGeneratorStatus({
+          message: "Failed to load initial dashboard data.",
+          type: "error",
+        });
+      });
+  }, []);
+
+  const handleGenerateTimetable = async () => {
+    if (!selectedBatch) {
+      setGeneratorStatus({
+        message: "Please select a batch before generating.",
+        type: "error",
+      });
+      return;
+    }
+    setIsGenerating(true);
+    setGeneratorStatus({
+      message: "Initializing solver... This may take a minute.",
+      type: "info",
+    });
+
+    const token = localStorage.getItem("authToken");
+    try {
+      const response = await fetch(
+        "http://localhost:3000/api/generate-timetable",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ batch_id: selectedBatch }),
+        }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(
+          data.details ||
+            data.msg ||
+            "An unknown error occurred during generation."
+        );
+      }
+      setGeneratorStatus({ message: data.msg, type: "success" });
+    } catch (err) {
+      setGeneratorStatus({ message: err.message, type: "error" });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold text-slate-800">Admin Dashboard</h1>
         <p className="mt-1 text-lg text-slate-600">
-          Welcome back, {user?.email || "Admin"}! Manage your university's
-          timetable efficiently.
+          Welcome back, {user?.username || "Admin"}!
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Quick Link Card for Batches */}
-        <Link
-          to="/admin/batches"
-          className="block p-6 bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 ease-in-out transform hover:-translate-y-1"
-        >
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-indigo-100 rounded-full">
-              <BatchesIcon /> {/* Replace with actual icon */}
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-slate-800">
-                Manage Batches
-              </h2>
-              <p className="text-sm text-slate-500">
-                View, create, and edit academic batches.
-              </p>
-            </div>
-          </div>
-        </Link>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <StatCard
+          title="Total Batches"
+          value={stats?.batches ?? "..."}
+          icon="📚"
+          color="bg-indigo-100"
+        />
+        <StatCard
+          title="Total Subjects"
+          value={stats?.subjects ?? "..."}
+          icon="📖"
+          color="bg-teal-100"
+        />
+        <StatCard
+          title="Total Teachers"
+          value={stats?.teachers ?? "..."}
+          icon="🧑‍🏫"
+          color="bg-amber-100"
+        />
+        <StatCard
+          title="Total Rooms"
+          value={stats?.rooms ?? "..."}
+          icon="🚪"
+          color="bg-rose-100"
+        />
+      </div>
 
-        {/* Quick Link Card for Subjects */}
-        <Link
-          to="/admin/subjects"
-          className="block p-6 bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 ease-in-out transform hover:-translate-y-1"
-        >
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-teal-100 rounded-full">
-              <SubjectsIcon /> {/* Replace with actual icon */}
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-slate-800">
-                Manage Subjects
-              </h2>
-              <p className="text-sm text-slate-500">
-                Define courses, credits, and faculty assignments.
-              </p>
-            </div>
+      {/* NEW: Timetable Engine Control Panel */}
+      <div className="bg-white p-6 rounded-xl shadow-lg border border-slate-200">
+        <h3 className="text-xl font-semibold text-slate-800 mb-4">
+          Timetable Engine
+        </h3>
+        <div className="flex flex-col md:flex-row items-center gap-4 border-b pb-6 mb-4">
+          <div className="w-full md:flex-1">
+            <label htmlFor="batch-select" className="label mb-1">
+              Select Batch to Generate
+            </label>
+            <select
+              id="batch-select"
+              value={selectedBatch}
+              onChange={(e) => setSelectedBatch(e.target.value)}
+              className="input w-full"
+              disabled={isGenerating}
+            >
+              <option value="" disabled>
+                -- Select a Batch --
+              </option>
+              {batches.map((batch) => (
+                <option key={batch.batch_id} value={batch.batch_id}>
+                  {batch.name}
+                </option>
+              ))}
+            </select>
           </div>
-        </Link>
-
-        {/* Placeholder Card for Settings or other important links */}
-        <div
-          className="p-6 bg-white rounded-xl shadow-lg hover:shadow-2xl transition-shadow duration-300 ease-in-out transform hover:-translate-y-1 cursor-pointer"
-          onClick={() => alert("Settings page placeholder")}
-        >
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-rose-100 rounded-full">
-              <SettingsIcon /> {/* Replace with actual icon */}
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-slate-800">
-                System Settings
-              </h2>
-              <p className="text-sm text-slate-500">
-                Configure global parameters and preferences.
-              </p>
-            </div>
+          <div className="w-full md:w-auto self-end">
+            <button
+              onClick={handleGenerateTimetable}
+              disabled={isGenerating || !selectedBatch}
+              className="w-full btn btn-primary flex items-center justify-center gap-2"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className={`h-5 w-5 ${isGenerating ? "animate-spin" : ""}`}
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              {isGenerating ? "Generating..." : "Generate Timetable"}
+            </button>
           </div>
         </div>
+        {generatorStatus.message && (
+          <div className="mt-4 p-3 rounded-md text-sm font-medium">
+            <p
+              className={`
+                    ${
+                      generatorStatus.type === "success" ? "text-green-800" : ""
+                    }
+                    ${generatorStatus.type === "error" ? "text-red-800" : ""}
+                    ${generatorStatus.type === "info" ? "text-blue-800" : ""}
+                `}
+            >
+              <span className="font-bold">Status:</span>{" "}
+              {generatorStatus.message}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* You can add more sections here like recent activity, alerts, etc. */}
-      <div className="mt-10 bg-white p-6 rounded-xl shadow-lg">
-        <h3 className="text-xl font-semibold text-slate-800 mb-3">
-          System Status
+      <div className="bg-white p-6 rounded-xl shadow-lg">
+        <h3 className="text-xl font-semibold text-slate-800 mb-4">
+          Quick Actions
         </h3>
-        <p className="text-sm text-slate-600">
-          All systems operational. Last timetable generated:{" "}
-          {new Date().toLocaleDateString()}.
-        </p>
-        {/* Add more status indicators or quick stats */}
+        <div className="flex flex-wrap gap-4">
+          <Link to="/admin/batches/new" className="btn btn-secondary">
+            Create New Batch
+          </Link>
+          <Link to="/admin/subjects/new" className="btn btn-secondary">
+            Create New Subject
+          </Link>
+          <Link to="/admin/teachers/new" className="btn btn-secondary">
+            Add New Teacher
+          </Link>
+          <Link to="/admin/rooms/new" className="btn btn-secondary">
+            Add New Room
+          </Link>
+        </div>
       </div>
     </div>
   );

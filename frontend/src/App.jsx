@@ -7,6 +7,7 @@ import LoginPage from "./pages/LoginPage";
 import AdminLayout from "./pages/AdminLayout";
 import FacultyLayout from "./pages/FacultyLayout";
 import NotFoundPage from "./pages/NotFoundPage";
+import AuthCallbackPage from "./pages/AuthCallbackPage";
 
 // Admin Pages
 import AdminDashboardOverview from "./pages/admin/AdminDashboardOverview";
@@ -20,14 +21,17 @@ import EditSubjectPage from "./pages/admin/EditSubjectPage";
 import SubjectDetailPage from "./pages/admin/SubjectDetailPage";
 import TeachersListPage from "./pages/admin/TeachersListPage";
 import CreateTeacherPage from "./pages/admin/CreateTeacherPage";
+import EditTeacherPage from "./pages/admin/EditTeacherPage";
 import RoomsListPage from "./pages/admin/RoomsListPage";
 import CreateRoomPage from "./pages/admin/CreateRoomPage";
+import EditRoomPage from "./pages/admin/EditRoomPage";
 import TimetableViewerPage from "./pages/admin/TimetableViewerPage";
 
 // Faculty Pages
-// --- FIX: Corrected the import path for FacultyDashboardPage ---
 import FacultyDashboardPage from "./pages/faculty/FacultyDashboardPage";
 import FacultyProfilePage from "./pages/faculty/FacultyProfilePage";
+import MyCoursesPage from "./pages/faculty/MyCoursesPage";
+import CourseDetailPage from "./pages/faculty/CourseDetailPage";
 
 function App() {
   const [authDetails, setAuthDetails] = useState(null);
@@ -67,11 +71,7 @@ function App() {
               <PublicHomePage />
             ) : (
               <Navigate
-                to={
-                  authDetails.role === "user"
-                    ? "/faculty/dashboard"
-                    : "/admin/dashboard"
-                }
+                to={authDetails.role === "user" ? "/faculty" : "/admin"}
               />
             )
           }
@@ -83,14 +83,14 @@ function App() {
               <LoginPage onLoginSuccess={handleLoginSuccess} />
             ) : (
               <Navigate
-                to={
-                  authDetails.role === "user"
-                    ? "/faculty/dashboard"
-                    : "/admin/dashboard"
-                }
+                to={authDetails.role === "user" ? "/faculty" : "/admin"}
               />
             )
           }
+        />
+        <Route
+          path="/auth/callback"
+          element={<AuthCallbackPage onLoginSuccess={handleLoginSuccess} />}
         />
 
         <Route
@@ -101,7 +101,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route index element={<AdminDashboardOverview />} />
           <Route path="dashboard" element={<AdminDashboardOverview />} />
           <Route path="batches" element={<BatchesListPage />} />
           <Route path="batches/new" element={<CreateBatchPage />} />
@@ -116,8 +116,13 @@ function App() {
           <Route path="subjects/:subjectId" element={<SubjectDetailPage />} />
           <Route path="teachers" element={<TeachersListPage />} />
           <Route path="teachers/new" element={<CreateTeacherPage />} />
+          <Route
+            path="teachers/edit/:teacherId"
+            element={<EditTeacherPage />}
+          />
           <Route path="rooms" element={<RoomsListPage />} />
           <Route path="rooms/new" element={<CreateRoomPage />} />
+          <Route path="rooms/edit/:roomId" element={<EditRoomPage />} />
           <Route path="timetable" element={<TimetableViewerPage />} />
         </Route>
 
@@ -129,8 +134,10 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route index element={<Navigate to="dashboard" replace />} />
+          <Route index element={<FacultyDashboardPage />} />
           <Route path="dashboard" element={<FacultyDashboardPage />} />
+          <Route path="courses" element={<MyCoursesPage />} />
+          <Route path="courses/:batchId" element={<CourseDetailPage />} />
           <Route path="profile" element={<FacultyProfilePage />} />
         </Route>
 
