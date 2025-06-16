@@ -1,0 +1,121 @@
+{
+  "config": {
+    "num_days": 5,
+    "slots_per_day": 8,
+    "morning_slots_count": 4,
+    "evening_slots_start_idx": 4,
+    "max_daily_hours_soft": 6,
+    "max_consecutive_lecture_hours": 2,
+    "solver_max_time_seconds": 30,
+    "log_search_progress": true
+  },
+  "batch_to_schedule": {
+    "batch_id": 1,
+    "name": "Computer Science - 3rd Semester"
+  },
+  "blocked_slots": [
+    { "day_index": 0, "slot_index_in_day": 0 },
+    { "day_index": 0, "slot_index_in_day": 1 }
+  ],
+  "existing_sessions": [
+    {
+      "teacher_id": 3,
+      "room_id": 1,
+      "day_index": 1,
+      "start_slot_in_day": 0,
+      "duration_slots": 2
+    },
+    {
+      "teacher_id": 5,
+      "room_id": 4,
+      "day_index": 2,
+      "start_slot_in_day": 4,
+      "duration_slots": 3
+    }
+  ],
+  "subjects": [
+    {
+      "subject_id": 101,
+      "name": "Data Structures",
+      "code": "CS201",
+      "lecture_credits": 3,
+      "lab_credits": 2
+    },
+    {
+      "subject_id": 102,
+      "name": "Database Systems",
+      "code": "CS202",
+      "lecture_credits": 3,
+      "lab_credits": 2
+    },
+    {
+      "subject_id": 103,
+      "name": "Operating Systems",
+      "code": "CS203",
+      "lecture_credits": 4,
+      "lab_credits": 0
+    },
+    {
+      "subject_id": 104,
+      "name": "Discrete Mathematics",
+      "code": "MA201",
+      "lecture_credits": 4,
+      "lab_credits": 0
+    },
+    {
+      "subject_id": 105,
+      "name": "Computer Networks",
+      "code": "CS204",
+      "lecture_credits": 3,
+      "lab_credits": 2
+    },
+    {
+      "subject_id": 106,
+      "name": "Software Engineering",
+      "code": "CS205",
+      "lecture_credits": 3,
+      "lab_credits": 2
+    },
+    {
+      "subject_id": 107,
+      "name": "Theory of Computation",
+      "code": "CS206",
+      "lecture_credits": 4,
+      "lab_credits": 0
+    }
+  ],
+  "teachers": [
+    { "teacher_id": 1, "name": "Dr. Alan Turing" },
+    { "teacher_id": 2, "name": "Dr. Ada Lovelace" },
+    { "teacher_id": 3, "name": "Dr. Grace Hopper" },
+    { "teacher_id": 4, "name": "Dr. John von Neumann" },
+    { "teacher_id": 5, "name": "Dr. Edsger Dijkstra" },
+    { "teacher_id": 6, "name": "Dr. Tim Berners-Lee" },
+    { "teacher_id": 7, "name": "Dr. Donald Knuth" }
+  ],
+  "teacher_allocations": [
+    { "subject_id": 101, "teacher_id": 1 },
+    { "subject_id": 102, "teacher_id": 2 },
+    { "subject_id": 103, "teacher_id": 3 },
+    { "subject_id": 104, "teacher_id": 4 },
+    { "subject_id": 105, "teacher_id": 5 },
+    { "subject_id": 106, "teacher_id": 6 },
+    { "subject_id": 107, "teacher_id": 7 }
+  ],
+  "rooms": [
+    { "room_id": 1, "room_name": "Room 101", "capacity": 60, "is_lab": false },
+    { "room_id": 2, "room_name": "Room 102", "capacity": 60, "is_lab": false },
+    {
+      "room_id": 3,
+      "room_name": "Computer Lab A",
+      "capacity": 30,
+      "is_lab": true
+    },
+    {
+      "room_id": 4,
+      "room_name": "Computer Lab B",
+      "capacity": 30,
+      "is_lab": true
+    }
+  ]
+}
