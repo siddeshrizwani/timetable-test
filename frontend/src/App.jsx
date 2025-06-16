@@ -26,6 +26,7 @@ import RoomsListPage from "./pages/admin/RoomsListPage";
 import CreateRoomPage from "./pages/admin/CreateRoomPage";
 import EditRoomPage from "./pages/admin/EditRoomPage";
 import TimetableViewerPage from "./pages/admin/TimetableViewerPage";
+import AnalyticsDashboardPage from "./pages/admin/AnalyticsDashboardPage"; 
 
 // Faculty Pages
 import FacultyDashboardPage from "./pages/faculty/FacultyDashboardPage";
@@ -103,6 +104,8 @@ function App() {
         >
           <Route index element={<AdminDashboardOverview />} />
           <Route path="dashboard" element={<AdminDashboardOverview />} />
+          <Route path="analytics" element={<AnalyticsDashboardPage />} />
+
           <Route path="batches" element={<BatchesListPage />} />
           <Route path="batches/new" element={<CreateBatchPage />} />
           <Route path="batches/edit/:batchId" element={<EditBatchPage />} />
