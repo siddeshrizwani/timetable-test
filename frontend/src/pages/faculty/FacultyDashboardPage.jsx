@@ -3,27 +3,35 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
 
 // A reusable component for displaying a single class session
-const ClassCard = ({ time, subject, batch, room }) => (
-  <div className="p-4 rounded-lg border-l-4 border-blue-500 bg-blue-50 text-left">
+const ClassCard = ({ time, subject, code, batch, room, isLab }) => (
+  <div
+    className={`p-4 rounded-lg border-l-4 shadow-sm ${
+      isLab ? "border-teal-500 bg-teal-50" : "border-blue-500 bg-blue-50"
+    }`}
+  >
     <p className="font-bold text-sm text-slate-800">{time}</p>
     <p className="text-lg font-semibold text-slate-900 mt-1">{subject}</p>
     <div className="text-sm text-slate-600 mt-2">
-      <p>Batch: {batch}</p>
-      <p>Room: {room}</p>
+      <p>
+        <strong>Batch:</strong> {batch}
+      </p>
+      <p>
+        <strong>Room:</strong> {room}
+      </p>
     </div>
   </div>
 );
 
 const FacultyDashboardPage = () => {
-  const { user } = useOutletContext(); // Get user data from the layout context
+  const { user } = useOutletContext();
   const [schedule, setSchedule] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Fetch the logged-in faculty member's schedule
   useEffect(() => {
     const fetchSchedule = async () => {
       setIsLoading(true);
+      setError("");
       const token = localStorage.getItem("authToken");
       try {
         const response = await fetch(
@@ -33,8 +41,10 @@ const FacultyDashboardPage = () => {
           }
         );
         if (!response.ok) {
+          const errData = await response.json();
           throw new Error(
-            "Failed to fetch your schedule. Please try again later."
+            errData.msg ||
+              "Failed to fetch your schedule. Please try again later."
           );
         }
         const data = await response.json();
@@ -75,21 +85,23 @@ const FacultyDashboardPage = () => {
       </div>
 
       {isLoading && (
-        <p className="text-center p-10">Loading your schedule...</p>
+        <div className="text-center p-10">Loading your schedule...</div>
       )}
       {error && (
-        <div className="p-4 bg-red-100 text-red-700 rounded-md">{error}</div>
+        <div className="p-4 bg-red-100 border border-red-400 text-red-700 rounded-md text-center">
+          {error}
+        </div>
       )}
 
       {!isLoading && !error && (
         <div className="space-y-6">
           {daysOfWeek.map((day) => (
             <div key={day}>
-              <h2 className="text-xl font-semibold text-slate-700 border-b pb-2">
+              <h2 className="text-xl font-semibold text-slate-700 border-b pb-2 mb-4">
                 {day}
               </h2>
               {groupedSchedule[day] && groupedSchedule[day].length > 0 ? (
-                <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                   {groupedSchedule[day].map((session) => (
                     <ClassCard
                       key={session.session_id}
@@ -105,13 +117,15 @@ const FacultyDashboardPage = () => {
                         minute: "2-digit",
                       })}`}
                       subject={session.subject_name}
+                      code={session.subject_code}
                       batch={session.batch_name}
                       room={session.room_name}
+                      isLab={session.is_lab}
                     />
                   ))}
                 </div>
               ) : (
-                <p className="mt-4 text-slate-500">
+                <p className="text-slate-500">
                   No classes scheduled for {day}.
                 </p>
               )}

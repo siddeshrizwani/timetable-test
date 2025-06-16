@@ -33,7 +33,8 @@ const MyCoursesPage = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-slate-800">My Assigned Courses</h1>
       <p className="text-slate-600">
-        A list of all unique subjects you teach across various batches.
+        This is a list of all unique subjects you are currently assigned to
+        teach across various batches.
       </p>
       <div className="bg-white shadow-xl rounded-lg overflow-hidden">
         <table className="min-w-full divide-y divide-slate-200">

@@ -141,6 +141,22 @@ function App() {
           <Route path="profile" element={<FacultyProfilePage />} />
         </Route>
 
+        <Route
+          path="/faculty"
+          element={
+            <ProtectedRoute allowedRoles={["user"]}>
+              <FacultyLayout user={authDetails} onLogout={handleLogout} />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<FacultyDashboardPage />} />
+          <Route path="dashboard" element={<FacultyDashboardPage />} />
+          <Route path="courses" element={<MyCoursesPage />} /> {/* <-- NEW */}
+          <Route path="courses/:batchId" element={<CourseDetailPage />} />{" "}
+          {/* <-- NEW */}
+          <Route path="profile" element={<FacultyProfilePage />} />
+        </Route>
+
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>

@@ -601,4 +601,81 @@ router.post("/generate-timetable", async (req, res) => {
   }
 });
 
+
+
+
+// --- ANALYTICS API (NEW) ---
+
+// GET Teacher Workload (total credits assigned)
+router.get("/analytics/teacher-workload", async (req, res) => {
+  try {
+      const query = `
+          SELECT 
+              t.name as teacher_name, 
+              COALESCE(SUM(s.lecture_credits + s.lab_credits), 0) as total_assigned_credits
+          FROM teachers t
+          LEFT JOIN class_sessions cs ON t.teacher_id = cs.teacher_id
+          LEFT JOIN subjects s ON cs.subject_id = s.subject_id
+          GROUP BY t.teacher_id
+          ORDER BY total_assigned_credits DESC;
+      `;
+      const result = await pool.query(query);
+      res.json(result.rows);
+  } catch (err) {
+      console.error("Error fetching teacher workload:", err);
+      res.status(500).json({ msg: "Internal server error" });
+  }
+});
+
+// GET Room Utilization (total hours booked per week)
+router.get("/analytics/room-utilization", async (req, res) => {
+  try {
+      const query = `
+          SELECT 
+              r.room_name,
+              EXTRACT(EPOCH FROM COALESCE(SUM(ts.end_time - ts.start_time), '0 hours'::interval')) / 3600 AS total_hours_booked
+          FROM rooms r
+          LEFT JOIN class_sessions cs ON r.room_id = cs.room_id
+          LEFT JOIN timeslots ts ON cs.timeslot_id = ts.timeslot_id
+          GROUP BY r.room_id
+          ORDER BY total_hours_booked DESC;
+      `;
+      const result = await pool.query(query);
+      // Convert hours from string to number
+      const formattedResult = result.rows.map(row => ({
+          ...row,
+          total_hours_booked: parseFloat(row.total_hours_booked)
+      }));
+      res.json(formattedResult);
+  } catch (err) {
+      console.error("Error fetching room utilization:", err);
+      res.status(500).json({ msg: "Internal server error" });
+  }
+});
+
+// GET Departmental Load (class count and credit count per dept)
+router.get("/analytics/department-load", async (req, res) => {
+  try {
+      const query = `
+          SELECT 
+              b.department, 
+              COUNT(DISTINCT s.subject_id) as unique_subjects,
+              COUNT(cs.session_id) as total_classes_scheduled
+          FROM batches b
+          LEFT JOIN class_sessions cs ON b.batch_id = cs.batch_id
+          LEFT JOIN subjects s ON cs.subject_id = s.subject_id
+          WHERE b.department IS NOT NULL
+          GROUP BY b.department
+          ORDER BY b.department;
+      `;
+      const result = await pool.query(query);
+      res.json(result.rows);
+  } catch (err) {
+      console.error("Error fetching department load:", err);
+      res.status(500).json({ msg: "Internal server error" });
+  }
+});
+
+
+
 module.exports = router;
