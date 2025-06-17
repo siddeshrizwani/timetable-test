@@ -3,6 +3,7 @@ const router = express.Router();
 const bcrypt = require("bcrypt");
 const pool = require("../config/db");
 const { spawn } = require("child_process");
+const { v4: uuidv4 } = require("uuid");
 
 // --- DASHBOARD API ---
 router.get("/stats", async (req, res) => {
@@ -145,18 +146,85 @@ router.put("/batches/:id", async (req, res) => {
 
 router.delete("/batches/:id", async (req, res) => {
   const { id } = req.params;
+  const client = await pool.connect();
+  
   try {
-    const result = await pool.query("DELETE FROM batches WHERE batch_id = $1", [
-      id,
-    ]);
-    if (result.rowCount === 0)
+    await client.query("BEGIN");
+    
+    // Check if batch exists and get info for response
+    const batchCheck = await client.query("SELECT batch_id, name FROM batches WHERE batch_id = $1", [id]);
+    if (batchCheck.rows.length === 0) {
+      await client.query("ROLLBACK");
       return res.status(404).json({ msg: "Batch not found." });
-    res
-      .status(200)
-      .json({ msg: "Batch and all associated data deleted successfully." });
+    }
+    
+    const batchName = batchCheck.rows[0].name;
+    console.log(`Starting deletion of batch: ${batchName} (${id})`);
+    
+    // Get counts before deletion for response
+    const counts = await client.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM class_sessions WHERE batch_id = $1) as sessions,
+        (SELECT COUNT(*) FROM batch_timeslots WHERE batch_id = $1) as timeslots,
+        (SELECT COUNT(*) FROM teacher_allocations WHERE batch_id = $1) as allocations,
+        (SELECT COUNT(*) FROM timetable_generations WHERE batch_id = $1) as generations,
+        (SELECT COUNT(*) FROM batch_subjects WHERE batch_id = $1) as subjects
+    `, [id]);
+    
+    const beforeCounts = counts.rows[0];
+    
+    // Delete the batch - CASCADE will automatically delete related data
+    const batchResult = await client.query("DELETE FROM batches WHERE batch_id = $1", [id]);
+    console.log(`Deleted batch: ${batchName} with CASCADE delete`);
+    
+    await client.query("COMMIT");
+    
+    // Clean up any generated files
+    const fs = require('fs');
+    const path = require('path');
+    
+    try {
+      // Delete output files
+      const outputFile = path.join(__dirname, '..', 'engine', 'outputs', `${id}_output.json`);
+      const frontendFile = path.join(__dirname, '..', '..', 'frontend', 'public', `timetable_${id}.json`);
+      
+      if (fs.existsSync(outputFile)) {
+        fs.unlinkSync(outputFile);
+        console.log(`Deleted output file: ${outputFile}`);
+      }
+      
+      if (fs.existsSync(frontendFile)) {
+        fs.unlinkSync(frontendFile);
+        console.log(`Deleted frontend file: ${frontendFile}`);
+      }
+    } catch (fileErr) {
+      console.warn("Could not delete some files:", fileErr.message);
+    }
+    
+    res.status(200).json({ 
+      msg: "Batch and all associated data deleted successfully.",
+      details: {
+        batch_name: batchName,
+        deleted_counts: {
+          class_sessions: parseInt(beforeCounts.sessions),
+          batch_timeslots: parseInt(beforeCounts.timeslots),
+          teacher_allocations: parseInt(beforeCounts.allocations),
+          timetable_generations: parseInt(beforeCounts.generations),
+          batch_subjects: parseInt(beforeCounts.subjects)
+        }
+      }
+    });
+    
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("Error deleting batch:", err);
-    res.status(500).json({ msg: "Server error" });
+    res.status(500).json({ 
+      msg: "Server error", 
+      error: err.message,
+      detail: "Failed to delete batch and associated data" 
+    });
+  } finally {
+    client.release();
   }
 });
 
@@ -526,27 +594,69 @@ router.delete("/class-sessions/:id", async (req, res) => {
 router.get("/timetable/:batchId", async (req, res) => {
   const { batchId } = req.params;
   try {
+      // First try to get from generated output files
+      const fs = require('fs');
+      const path = require('path');
+      const outputFilePath = path.join(__dirname, '..', 'engine', 'outputs', `${batchId}_output.json`);
+      if (fs.existsSync(outputFilePath)) {
+        const outputData = JSON.parse(fs.readFileSync(outputFilePath, 'utf8'));
+        return res.json(outputData);
+      }
+        // Fallback to database query (legacy support)
       const query = `
           SELECT 
               cs.session_id,
+              cs.session_type,
+              s.subject_id,
               s.name AS subject_name,
               s.code AS subject_code,
+              t.teacher_id,
               t.name AS teacher_name,
+              r.room_id,
               r.room_name,
-              ts.day_of_week,
-              ts.start_time,
-              ts.end_time,
-              ts.slot_index
+              bt.day_of_week,
+              bt.start_time,
+              bt.end_time,
+              bt.slot_index,
+              bt.slot_name
           FROM class_sessions cs
           LEFT JOIN subjects s ON cs.subject_id = s.subject_id
           LEFT JOIN teachers t ON cs.teacher_id = t.teacher_id
           LEFT JOIN rooms r ON cs.room_id = r.room_id
-          LEFT JOIN timeslots ts ON cs.timeslot_id = ts.timeslot_id
+          LEFT JOIN batch_timeslots bt ON cs.batch_timeslot_id = bt.timeslot_id
           WHERE cs.batch_id = $1
-          ORDER BY ts.slot_index;
+          ORDER BY bt.day_of_week, bt.slot_index;
       `;
       const result = await pool.query(query, [batchId]);
-      res.json(result.rows);
+      
+      // Convert database format to match solver output format
+      const timetableEntries = result.rows.map(row => ({
+        event_id: `${row.subject_code}_${row.session_id}`,
+        subject_id: row.subject_id,
+        subject_name: row.subject_name,
+        subject_code: row.subject_code,
+        type: row.session_type === 'lab' ? 'Lab' : 'Lec',
+        teacher_id: row.teacher_id,
+        teacher_name: row.teacher_name,
+        room_id: row.room_id,
+        room_name: row.room_name,
+        duration_slots: 1, // Default for now
+        day_of_week: row.day_of_week,
+        slot_index: parseInt(row.slot_index) || 0,
+        start_slot_in_day: parseInt(row.slot_index) || 0,
+        end_slot_in_day: parseInt(row.slot_index) || 0
+      }));
+      
+      res.json({
+        status: "DATABASE",
+        solution: {
+          timetable: timetableEntries
+        },
+        batch_info: {
+          batch_id: batchId,
+          name: `Batch ${batchId}`
+        }
+      });
   } catch (err) {
       console.error(`Error fetching timetable for batch ${batchId}:`, err);
       res.status(500).json({ msg: "Internal server error" });
@@ -557,48 +667,344 @@ router.get("/timetable/:batchId", async (req, res) => {
 // --- TIMETABLE ENGINE API ---
 router.post("/generate-timetable", async (req, res) => {
   const { batch_id } = req.body;
-  if (!batch_id) return res.status(400).json({ msg: "A Batch ID is required." });
-  const client = await pool.connect();
+  const batchId = batch_id; // Use batch_id from payload
+  
+  if (!batchId) {
+    return res.status(400).json({ msg: "Batch ID is required" });
+  }
+
+  let client;
+  let responseHandled = false;
+  let clientReleased = false;
+
+  // Helper function to safely release client
+  const safeReleaseClient = (reason) => {
+    if (!clientReleased && client) {
+      try {
+        client.release();
+        clientReleased = true;
+        console.log(`[${batchId}] Database client released: ${reason}`);
+      } catch (releaseError) {
+        console.error(`[${batchId}] Error releasing client (${reason}):`, releaseError);
+      }
+    }
+  };
+
   try {
-      const [subjects, teachers, rooms, timeslots] = await Promise.all([
-          client.query(`SELECT s.*, 'TBD' as teacher_id FROM subjects s JOIN batch_subjects bs ON s.subject_id = bs.subject_id WHERE bs.batch_id = $1`, [batch_id]),
-          client.query("SELECT * FROM teachers"),
-          client.query("SELECT * FROM rooms"),
-          client.query("SELECT timeslot_id, slot_index FROM timeslots ORDER BY slot_index ASC")
-      ]);
-      const solverInput = { subjects: subjects.rows, teachers: teachers.rows, rooms: rooms.rows };
-      if (solverInput.subjects.length === 0) return res.status(404).json({ msg: "No subjects found for this batch." });
+    // Get database client
+    client = await pool.connect();
+    console.log(`[${batchId}] Database client connected for timetable generation`);
+
+    // Fetch batch information
+    const batchResult = await client.query(
+      "SELECT * FROM batches WHERE batch_id = $1",
+      [batchId]
+    );
+
+    if (batchResult.rows.length === 0) {
+      safeReleaseClient("batch not found");
+      responseHandled = true;
+      return res.status(404).json({ msg: "Batch not found" });
+    }
+
+    const batch = batchResult.rows[0];
+    console.log(`[${batchId}] Found batch: ${batch.name}`);
+
+    // Fetch subjects for the batch
+    const subjectsResult = await client.query(`
+      SELECT s.* FROM subjects s 
+      JOIN batch_subjects bs ON s.subject_id = bs.subject_id 
+      WHERE bs.batch_id = $1
+    `, [batchId]);
+
+    // Fetch all teachers
+    const teachersResult = await client.query("SELECT * FROM teachers");
+
+    // Fetch all rooms
+    const roomsResult = await client.query("SELECT * FROM rooms");
+
+    // Create teacher allocations (1:1 mapping for now)
+    const teacherAllocations = subjectsResult.rows.map((subject, index) => ({
+      subject_id: subject.subject_id,
+      teacher_id: teachersResult.rows[index % teachersResult.rows.length]?.teacher_id,
+      batch_id: batchId
+    }));
+
+    console.log(`[${batchId}] Created ${teacherAllocations.length} teacher allocations for batch ${batchId}`);    // Fetch batch timeslots (specific to this batch)
+    const batchTimeslotsResult = await client.query(`
+      SELECT * FROM batch_timeslots 
+      WHERE batch_id = $1 
+      ORDER BY day_of_week, slot_index
+    `, [batchId]);
+
+    if (batchTimeslotsResult.rows.length === 0) {
+      safeReleaseClient("no batch timeslots found");
+      responseHandled = true;
+      return res.status(400).json({ 
+        msg: "No timeslots found for this batch. Please create batch timeslots first." 
+      });
+    }
+
+    console.log(`[${batchId}] Found ${batchTimeslotsResult.rows.length} batch-specific timeslots`);
+
+    // Fetch existing sessions (from this batch only - for conflicts within batch)
+    let existingSessionsResult;
+    try {
+      existingSessionsResult = await client.query(`
+        SELECT cs.*, bt.day_of_week, bt.slot_index, bt.start_time, bt.end_time
+        FROM class_sessions cs
+        JOIN batch_timeslots bt ON cs.batch_timeslot_id = bt.timeslot_id
+        WHERE cs.batch_id = $1
+      `, [batchId]);
+      console.log(`[${batchId}] Found ${existingSessionsResult.rows.length} existing sessions for this batch`);
+    } catch (timeslotError) {
+      console.warn(`[${batchId}] Could not fetch existing sessions with batch timeslots, using empty:`, timeslotError.message);
+      existingSessionsResult = { rows: [] };
+    }
+
+    // Prepare input data for Python solver
+    const inputData = {
+      config: {
+        num_days: 5,
+        slots_per_day: 8,
+        morning_slots_count: 4,
+        evening_slots_start_idx: 4,
+        max_daily_hours_soft: 6,
+        max_consecutive_lecture_hours: 2,
+        solver_max_time_seconds: 30,
+        log_search_progress: true
+      },
+      batch_to_schedule: {
+        batch_id: batch.batch_id,
+        name: batch.name
+      },
+      blocked_slots: [],
+      existing_sessions: existingSessionsResult.rows.map(session => ({
+        teacher_id: session.teacher_id,
+        room_id: session.room_id,
+        day_index: session.day_of_week === 'Monday' ? 0 : 
+                   session.day_of_week === 'Tuesday' ? 1 :
+                   session.day_of_week === 'Wednesday' ? 2 :
+                   session.day_of_week === 'Thursday' ? 3 :
+                   session.day_of_week === 'Friday' ? 4 : 0,
+        start_slot_in_day: session.slot_index || 0,
+        duration_slots: 1 // Default duration
+      })),
+      subjects: subjectsResult.rows.map(subject => ({
+        subject_id: subject.subject_id,
+        name: subject.name,
+        code: subject.code,
+        lecture_credits: subject.lecture_credits || 0,
+        lab_credits: subject.lab_credits || 0
+      })),
+      teachers: teachersResult.rows.map(teacher => ({
+        teacher_id: teacher.teacher_id,
+        name: teacher.name
+      })),      teacher_allocations: teacherAllocations,
+      rooms: roomsResult.rows.map(room => ({
+        room_id: room.room_id,
+        room_name: room.room_name,
+        capacity: room.capacity,
+        is_lab: room.is_lab || false
+      })),
+      timeslots: batchTimeslotsResult.rows.map(timeslot => ({
+        timeslot_id: timeslot.timeslot_id,
+        batch_id: timeslot.batch_id,
+        day_of_week: timeslot.day_of_week,
+        start_time: timeslot.start_time,
+        end_time: timeslot.end_time,
+        slot_index: timeslot.slot_index,
+        slot_name: timeslot.slot_name
+      }))
+    };
+
+    // Create input file
+    const fs = require('fs');
+    const path = require('path');
+    const inputFilePath = path.join(__dirname, '..', 'engine', `input_${batchId}.json`);
+    
+    const engineDir = path.join(__dirname, '..', 'engine');
+    if (!fs.existsSync(engineDir)) {
+      fs.mkdirSync(engineDir, { recursive: true });
+    }
+
+    await fs.promises.writeFile(inputFilePath, JSON.stringify(inputData, null, 2));
+    console.log(`[${batchId}] Input file created: ${inputFilePath}`);
+
+    // Execute Python solver
+    const pythonScriptPath = path.join(__dirname, '..', 'engine', 'solve_.py');
+    console.log(`[${batchId}] Starting Python solver: ${pythonScriptPath} with input ${inputFilePath}`);
+
+    const pythonProcess = spawn('python', [pythonScriptPath, inputFilePath]);
+    console.log(`[${batchId}] Python process spawned with PID: ${pythonProcess.pid}. Timeout set for 30s.`);
+
+    let pythonOutput = '';
+    let pythonError = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      pythonOutput += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      pythonError += data.toString();
+    });
+
+    pythonProcess.on('close', async (code) => {
+      if (responseHandled) return;
+
+      console.log(`[${batchId}] Python process PID ${pythonProcess.pid} exited with code ${code}.`);
       
-      const pythonProcess = spawn('python', ['solver.py']);
-      const result = await new Promise((resolve, reject) => {
-          let resultData = '';
-          pythonProcess.stdout.on('data', (data) => resultData += data.toString());
-          pythonProcess.stderr.on('data', (data) => reject(new Error(data.toString())));
-          pythonProcess.on('close', (code) => code === 0 ? resolve(resultData) : reject(new Error(`Solver exited with code ${code}`)));
-          pythonProcess.stdin.write(JSON.stringify(solverInput));
-          pythonProcess.stdin.end();
-      });
+      // Clean up input file
+      try {
+        if (fs.existsSync(inputFilePath)) {
+          await fs.promises.unlink(inputFilePath);
+          console.log(`[${batchId}] Successfully deleted input file: ${inputFilePath}`);
+        }
+      } catch (err) {
+        console.error(`[${batchId}] Error deleting input file:`, err);
+      }
 
-      const solution = JSON.parse(result);
-      if (solution.status !== 'success') return res.status(409).json({ msg: "Solver failed.", details: solution.message });
+      if (code !== 0) {
+        console.error(`[${batchId}] Python script execution failed. Exit code: ${code}.`);
+        console.error(`[${batchId}] Python stderr:`, pythonError);
+        safeReleaseClient("Python script failure");
+        responseHandled = true;
+        return res.status(500).json({
+          message: "Timetable generation script failed.",
+          error: pythonError || `Python script exited with code ${code}.`,
+          batchId: batchId,
+        });
+      }
 
-      const timeslotMap = new Map(timeslots.rows.map(ts => [ts.slot_index, ts.timeslot_id]));
-      await client.query('BEGIN');
-      await client.query('DELETE FROM class_sessions WHERE batch_id = $1', [batch_id]);
-      const insertPromises = solution.schedule.map(item => {
-          const timeslotId = timeslotMap.get(item.start_slot);
-          if (!timeslotId) return null;
-          return client.query("INSERT INTO class_sessions (subject_id, batch_id, teacher_id, room_id, timeslot_id) VALUES ($1, $2, $3, $4, $5)", [item.subject_id, batch_id, item.teacher_id, item.room_id, timeslotId]);
-      });
-      await Promise.all(insertPromises.filter(p => p));
-      await client.query('COMMIT');
-      res.status(200).json({ msg: `Timetable for batch ${batch_id} generated successfully!` });
+      // Process the output
+      const outputFilePath = path.join(__dirname, '..', 'engine', 'outputs', `${batchId}_output.json`);
+      const frontendOutputPath = path.join(__dirname, '..', '..', 'frontend', 'public', `timetable_${batchId}.json`);
+
+      try {
+        if (!fs.existsSync(outputFilePath)) {
+          console.error(`[${batchId}] Output file not found: ${outputFilePath}`);
+          safeReleaseClient("output file not found");
+          responseHandled = true;
+          return res.status(500).json({
+            message: "Timetable generation succeeded, but output file was not created.",
+            batchId: batchId,
+          });
+        }
+
+        const resultData = JSON.parse(await fs.promises.readFile(outputFilePath, 'utf8'));
+        console.log(`[${batchId}] Successfully read output file: ${outputFilePath}`);
+
+        // Copy to frontend
+        const frontendDir = path.dirname(frontendOutputPath);
+        if (!fs.existsSync(frontendDir)) {
+          fs.mkdirSync(frontendDir, { recursive: true });
+        }
+        await fs.promises.copyFile(outputFilePath, frontendOutputPath);
+        console.log(`[${batchId}] Copied output to frontend: ${frontendOutputPath}`);
+
+        // Store in database
+        if (resultData.solution && resultData.solution.timetable && Array.isArray(resultData.solution.timetable)) {
+          try {
+            await client.query("BEGIN");
+
+            // Clear old sessions for this batch
+            await client.query("DELETE FROM class_sessions WHERE batch_id = $1", [batchId]);
+            console.log(`[${batchId}] Cleared old class sessions from DB`);
+
+            // Insert new sessions
+            for (const session of resultData.solution.timetable) {
+              if (!session.subject_id || !session.teacher_id || !session.room_id) {
+                console.warn(`[${batchId}] Skipping session due to missing data:`, session);
+                continue;
+              }              // Find batch-specific timeslot
+              let batchTimeslotId;
+              const dayOfWeek = session.day_of_week || ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"][session.day_index] || "Monday";
+              const slotIndex = session.slot_index || session.start_slot_in_day || 0;
+              
+              // Find the batch-specific timeslot
+              const batchTimeslotResult = await client.query(`
+                SELECT timeslot_id FROM batch_timeslots 
+                WHERE batch_id = $1 AND day_of_week = $2 AND slot_index = $3
+              `, [batchId, dayOfWeek, slotIndex]);
+
+              if (batchTimeslotResult.rows.length > 0) {
+                batchTimeslotId = batchTimeslotResult.rows[0].timeslot_id;
+              } else {
+                console.warn(`[${batchId}] No batch timeslot found for ${dayOfWeek} slot ${slotIndex}, skipping session`);
+                continue; // Skip this session if batch timeslot doesn't exist
+              }
+
+              // Insert class session with batch_timeslot_id
+              await client.query(`
+                INSERT INTO class_sessions (subject_id, batch_id, teacher_id, batch_timeslot_id, room_id, session_type)
+                VALUES ($1, $2, $3, $4, $5, $6)
+              `, [session.subject_id, batchId, session.teacher_id, batchTimeslotId, session.room_id, session.type === 'Lab' ? 'lab' : 'lecture']);
+            }
+
+            await client.query("COMMIT");
+            console.log(`[${batchId}] Successfully stored timetable in database`);
+
+          } catch (dbError) {
+            console.error(`[${batchId}] Database error:`, dbError);
+            try {
+              await client.query("ROLLBACK");
+            } catch (rollbackError) {
+              console.error(`[${batchId}] Rollback error:`, rollbackError);
+            }
+          }
+        }
+
+        // Send successful response
+        safeReleaseClient("successful completion");
+        responseHandled = true;
+        return res.status(200).json({
+          message: "Timetable generated and saved successfully.",
+          batchId: batchId,
+          outputFile: `/timetable_${batchId}.json`,
+          data: resultData,
+        });
+
+      } catch (fileError) {
+        console.error(`[${batchId}] File processing error:`, fileError);
+        safeReleaseClient("file processing error");
+        responseHandled = true;
+        return res.status(500).json({
+          message: "Failed to process timetable output.",
+          error: fileError.message,
+          batchId: batchId,
+        });
+      }
+    });
+
+    // Set timeout for Python process
+    setTimeout(() => {
+      if (!responseHandled) {
+        pythonProcess.kill('SIGTERM');
+        safeReleaseClient("timeout");
+        responseHandled = true;
+        res.status(500).json({
+          message: "Timetable generation timed out.",
+          batchId: batchId,
+        });
+      }
+    }, 35000); // 35 seconds timeout
+
   } catch (err) {
-      await client.query('ROLLBACK');
-      res.status(500).json({ msg: "An internal server error occurred.", details: err.message });
+    console.error(`[${batchId}] Overall error:`, err);
+    if (!responseHandled) {
+      safeReleaseClient("general error");
+      responseHandled = true;
+      res.status(500).json({ 
+        msg: "Internal server error during timetable generation: " + err.message, 
+        batchId: batchId 
+      });
+    }
   } finally {
-      client.release();
+    safeReleaseClient("finally block");
   }
 });
+
+
+
 
 module.exports = router;

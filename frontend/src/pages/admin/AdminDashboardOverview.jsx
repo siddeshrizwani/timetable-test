@@ -22,13 +22,13 @@ const AdminDashboardOverview = () => {
   const { user } = useOutletContext();
   const [stats, setStats] = useState(null);
   const [batches, setBatches] = useState([]);
-
   // State for the solver control panel
   const [selectedBatch, setSelectedBatch] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatorStatus, setGeneratorStatus] = useState({
     message: "",
     type: "",
+    batchId: null,
   });
 
   // Fetch initial data for stats and the batch dropdown
@@ -90,8 +90,7 @@ const AdminDashboardOverview = () => {
           },
           body: JSON.stringify({ batch_id: selectedBatch }),
         }
-      );
-      const data = await response.json();
+      );      const data = await response.json();
       if (!response.ok) {
         throw new Error(
           data.details ||
@@ -99,9 +98,16 @@ const AdminDashboardOverview = () => {
             "An unknown error occurred during generation."
         );
       }
-      setGeneratorStatus({ message: data.msg, type: "success" });
-    } catch (err) {
-      setGeneratorStatus({ message: err.message, type: "error" });
+      setGeneratorStatus({ 
+        message: data.msg, 
+        type: "success",
+        batchId: selectedBatch
+      });    } catch (err) {
+      setGeneratorStatus({ 
+        message: err.message, 
+        type: "error",
+        batchId: null
+      });
     } finally {
       setIsGenerating(false);
     }
@@ -193,8 +199,7 @@ const AdminDashboardOverview = () => {
               {isGenerating ? "Generating..." : "Generate Timetable"}
             </button>
           </div>
-        </div>
-        {generatorStatus.message && (
+        </div>        {generatorStatus.message && (
           <div className="mt-4 p-3 rounded-md text-sm font-medium">
             <p
               className={`
@@ -208,6 +213,20 @@ const AdminDashboardOverview = () => {
               <span className="font-bold">Status:</span>{" "}
               {generatorStatus.message}
             </p>
+            {generatorStatus.type === "success" && generatorStatus.batchId && (
+              <div className="mt-2">
+                <Link 
+                  to="/admin/timetable" 
+                  className="inline-flex items-center gap-2 text-green-700 hover:text-green-900 underline"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                  View Generated Timetable
+                </Link>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -215,8 +234,7 @@ const AdminDashboardOverview = () => {
       <div className="bg-white p-6 rounded-xl shadow-lg">
         <h3 className="text-xl font-semibold text-slate-800 mb-4">
           Quick Actions
-        </h3>
-        <div className="flex flex-wrap gap-4">
+        </h3>        <div className="flex flex-wrap gap-4">
           <Link to="/admin/batches/new" className="btn btn-secondary">
             Create New Batch
           </Link>
@@ -228,6 +246,9 @@ const AdminDashboardOverview = () => {
           </Link>
           <Link to="/admin/rooms/new" className="btn btn-secondary">
             Add New Room
+          </Link>
+          <Link to="/admin/timetable" className="btn btn-primary">
+            📅 View Timetables
           </Link>
         </div>
       </div>
