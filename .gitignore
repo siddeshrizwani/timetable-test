@@ -1,3 +1,11 @@
+# ================================
+# TIMETABLE PROJECT GITIGNORE
+# ================================
+
+# ================================
+# NODE.JS & NPM
+# ================================
+
 # Logs
 logs
 *.log
@@ -72,37 +80,59 @@ web_modules/
 # Yarn Integrity file
 .yarn-integrity
 
-# dotenv environment variable files
+# ================================
+# ENVIRONMENT & CONFIGURATION
+# ================================
+
+# Environment variables (IMPORTANT: Keep .env files secret!)
 .env
+.env.local
 .env.development.local
 .env.test.local
 .env.production.local
-.env.local
+backend/.env
+frontend/.env
+
+# Database connection strings and secrets
+database.url
+*.pem
+*.key
+*.crt
+
+# Google OAuth credentials (if stored locally)
+google-credentials.json
+oauth-config.json
+
+# ================================
+# FRONTEND (REACT + VITE)
+# ================================
+
+# Vite build output
+frontend/dist/
+frontend/build/
+
+# Vite cache
+frontend/.vite/
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
 .parcel-cache
 
-# Next.js build output
+# Next.js build output (if used)
 .next
 out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
-# Comment in the public line in if your project uses Gatsby and not Next.js
-# https://nextjs.org/blog/next-9-1#public-directory-support
-# public
 
 # vuepress build output
 .vuepress/dist
 
 # vuepress v2.x temp and cache directory
 .temp
-.cache
 
 # vitepress build output
 **/.vitepress/dist
@@ -113,8 +143,239 @@ dist
 # Docusaurus cache and generated files
 .docusaurus
 
+# ================================
+# BACKEND SPECIFIC
+# ================================
+
+# Backend build artifacts
+backend/dist/
+backend/build/
+
+# Session storage
+backend/sessions/
+
+# ================================
+# PYTHON & SOLVER ENGINE
+# ================================
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# ================================
+# TIMETABLE SPECIFIC OUTPUTS
+# ================================
+
+# Timetable generation outputs
+backend/outputs/
+backend/engine/outputs/
+engine/outputs/
+frontend/public/timetable_*.json
+
+# Generated timetable files
+timetable_output.json
+*_output.json
+*.timetable
+
+# Solver temporary files
+backend/engine/temp/
+backend/engine/input_*.json
+engine/input_*.json
+
+# ================================
+# DEPLOYMENT & CLOUD
+# ================================
+
+# Railway deployment files (keep railway.json)
+.railway/
+
 # Serverless directories
 .serverless/
+
+# Docker
+Dockerfile.dev
+docker-compose.override.yml
+.dockerignore.dev
+
+# Heroku (not used but just in case)
+.heroku/
+
+# ================================
+# DEVELOPMENT TOOLS
+# ================================
+
+# VSCode settings (keep some, ignore others)
+.vscode/settings.json
+.vscode/launch.json
+.vscode/tasks.json
+.vscode/extensions.json
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# ================================
+# OPERATING SYSTEM
+# ================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+
+# Dump file
+*.stackdump
+
+# Folder config file
+[Dd]esktop.ini
+
+# Recycle Bin used on file shares
+$RECYCLE.BIN/
+
+# Windows Installer files
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+
+# Windows shortcuts
+*.lnk
+
+# Linux
+*~
+
+# temporary files which can be created if a process still has a handle open of a deleted file
+.fuse_hidden*
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
+# ================================
+# TEMPORARY & MISCELLANEOUS
+# ================================
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# Lock files
+*.lock
+package-lock.json.backup
+
+# Backup files
+*.bak
+*.backup
+*.orig
+
+# Test files
+test-results/
+test-output/
 
 # FuseBox cache
 .fusebox/
@@ -134,6 +395,3 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
-backend/outputs/*
-frontend/public/*
-backend/engine/outputs/*
