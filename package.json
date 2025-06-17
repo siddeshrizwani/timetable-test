@@ -1,5 +1,45 @@
 {
+  "name": "university-timetable-system",
+  "version": "1.0.0",
+  "description": "Automated University Timetable Management System with constraint-based optimization",
+  "main": "backend/server.js",  "scripts": {
+    "start": "cd backend && npm start",
+    "dev": "cd backend && npm run dev",
+    "frontend:dev": "cd frontend && npm run dev",
+    "frontend:build": "cd frontend && npm install && npm run build",
+    "backend:install": "cd backend && npm install",
+    "build": "npm run backend:install && npm run frontend:build",
+    "railway:build": "npm run build",
+    "migrate": "cd backend && node run-unified-schema.js",
+    "migrate:incremental": "cd backend && node run-incremental-migrations.js",
+    "migrate:legacy": "echo 'Legacy migration scripts removed. Use npm run migrate:incremental for existing databases.'",
+    "check-db": "cd backend && npm run check-db",
+    "setup": "npm run backend:install && cd frontend && npm install",
+    "dev:full": "concurrently \"npm run dev\" \"npm run frontend:dev\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/timetable-intern.git"
+  },
+  "keywords": [
+    "timetable",
+    "university",
+    "scheduling",
+    "optimization",
+    "nodejs",
+    "react",
+    "postgresql"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "engines": {
+    "node": "18.x",
+    "npm": "9.x"
+  },
   "dependencies": {
     "react-router-dom": "^7.6.1"
+  },
+  "devDependencies": {
+    "concurrently": "^7.6.0"
   }
 }

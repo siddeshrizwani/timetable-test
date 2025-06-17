@@ -1,0 +1,46 @@
+# Dockerfile for single-server deployment
+FROM node:18-alpine
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY backend/package*.json ./backend/
+COPY frontend/package*.json ./frontend/
+
+# Install backend dependencies
+WORKDIR /app/backend
+RUN npm ci --only=production
+
+# Install frontend dependencies and build
+WORKDIR /app/frontend
+RUN npm ci --only=production
+COPY frontend/ .
+RUN npm run build
+
+# Copy backend source code
+WORKDIR /app
+COPY backend/ ./backend/
+
+# Copy built frontend to backend
+RUN mkdir -p /app/backend/public
+RUN cp -r /app/frontend/dist/* /app/backend/public/ || true
+
+# Install Python for timetable solver
+RUN apk add --no-cache python3 py3-pip
+RUN pip3 install ortools numpy
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"
+
+# Start the application
+WORKDIR /app/backend
+CMD ["npm", "start"]

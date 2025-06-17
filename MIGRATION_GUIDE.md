@@ -1,32 +1,49 @@
-# Database Migration Instructions
+# Database Setup Guide
 
-## 🚀 How to Apply the Database Changes
+## 🚀 Database Setup Options
 
-### Option 1: Run the Node.js Migration Script (Recommended)
+### Option 1: Unified Schema (Recommended for New Deployments)
+
+For fresh databases (Railway, new PostgreSQL instances):
 
 1. **Make sure your server is stopped**:
    ```bash
-   # Stop any running node processes
+   # Stop any running node processes if needed
    Get-Process -Name "node" | Stop-Process -Force
    ```
 
-2. **Run the migration script**:
+2. **Run the unified schema**:
    ```bash
-   cd backend
-   node run-migration.js
+   npm run migrate
    ```
 
-3. **Start your server again**:
+3. **Verify the setup**:
    ```bash
-   node server.js
+   npm run check-db
    ```
 
-### Option 2: Manual SQL Execution
+### Option 2: Incremental Migration (For Existing Databases)
 
-If you prefer to run the SQL manually:
+If you have an existing database with data:
 
-1. Connect to your PostgreSQL database
-2. Run the SQL file: `backend/migrations/001_update_schema.sql`
+1. **Backup your database first** (recommended)
+
+2. **Run incremental migrations**:
+   ```bash
+   npm run migrate:incremental
+   ```
+
+3. **Verify the migration**:
+   ```bash
+   npm run check-db
+   ```
+
+### Option 3: Manual SQL Execution
+
+If you prefer to run SQL manually:
+
+1. **For new databases**: Execute `backend/schema.sql`
+2. **For existing databases**: Execute migration files in `backend/migrations/` in order
 
 ## ✅ What This Migration Does
 

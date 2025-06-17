@@ -15,4 +15,17 @@
 ## Technologies Used
 - Frontend: React, Tailwind
 - Backend: Express, Node
-- Logic: C++, Google OR-Tools
+- Logic: Python, Google OR-Tools
+
+## 🚀 Deployment
+
+This project is configured for deployment on **Railway** with a unified server architecture (frontend and backend together).
+
+**📋 Quick Deploy:**
+1. Push your code to GitHub
+2. Connect repository to [Railway](https://railway.app)
+3. Add PostgreSQL database
+4. Set environment variables
+5. Deploy automatically!
+
+**📖 Complete Guide:** See [DEPLOY_RAILWAY.md](./DEPLOY_RAILWAY.md) for detailed deployment instructions.
