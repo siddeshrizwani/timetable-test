@@ -7,7 +7,6 @@ import LoginPage from "./pages/LoginPage";
 import AdminLayout from "./pages/AdminLayout";
 import FacultyLayout from "./pages/FacultyLayout";
 import NotFoundPage from "./pages/NotFoundPage";
-import AuthCallbackPage from "./pages/AuthCallbackPage";
 
 // Admin Pages
 import AdminDashboardOverview from "./pages/admin/AdminDashboardOverview";
@@ -86,12 +85,7 @@ function App() {
                 to={authDetails.role === "user" ? "/faculty" : "/admin"}
               />
             )
-          }
-        />
-        <Route
-          path="/auth/callback"
-          element={<AuthCallbackPage onLoginSuccess={handleLoginSuccess} />}
-        />
+          }        />
 
         <Route
           path="/admin"
