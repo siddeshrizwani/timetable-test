@@ -83,6 +83,8 @@ router.post("/batches", async (req, res) => {
       [name, academic_year, semester_number, department]
     );
     const batchId = batchRes.rows[0].batch_id;
+    
+    // Create subject associations
     if (subject_ids.length > 0) {
       const subjectQueries = subject_ids.map((sid) =>
         client.query(
@@ -92,19 +94,69 @@ router.post("/batches", async (req, res) => {
       );
       await Promise.all(subjectQueries);
     }
+
+    // AUTO-CREATE BATCH TIMESLOTS - Standard university schedule
+    console.log(`Creating default timeslots for batch ${batchId}`);
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const timeSlots = [
+      { start: '09:00', end: '10:00', slot: 1 },
+      { start: '10:00', end: '11:00', slot: 2 },
+      { start: '11:15', end: '12:15', slot: 3 },
+      { start: '12:15', end: '13:15', slot: 4 },
+      { start: '14:00', end: '15:00', slot: 5 },
+      { start: '15:00', end: '16:00', slot: 6 },
+      { start: '16:15', end: '17:15', slot: 7 },
+      { start: '17:15', end: '18:15', slot: 8 }
+    ];
+
+    // Insert batch timeslots for all days and time slots
+    for (const day of days) {
+      for (const slot of timeSlots) {
+        await client.query(
+          "INSERT INTO batch_timeslots (batch_id, day_of_week, start_time, end_time, slot_index) VALUES ($1, $2, $3, $4, $5)",
+          [batchId, day, slot.start, slot.end, slot.slot]
+        );
+      }
+    }
+    console.log(`Created ${days.length * timeSlots.length} timeslots for batch ${batchId}`);
+
     await client.query("COMMIT");
     res
       .status(201)
-      .json({ msg: "Batch created successfully", batch_id: batchId });
+      .json({ 
+        msg: "Batch created successfully with default timeslots", 
+        batch_id: batchId,
+        timeslots_created: days.length * timeSlots.length
+      });
   } catch (err) {
-    await client.query("ROLLBACK");
-    if (err.code === "23505")
+    console.error(`Error in POST /api/batches for batch '${req.body.name || 'unknown'}':`, err); // Log the full error object and batch name
+    try {
+      await client.query("ROLLBACK");
+      console.log("Transaction rolled back due to error.");
+    } catch (rollbackErr) {
+      console.error("Error attempting to rollback transaction:", rollbackErr);
+    }
+
+    if (err.code === "23505") { // Unique constraint violation
       return res
         .status(409)
-        .json({ msg: "A batch with this name already exists." });
-    res.status(500).json({ msg: "Server error" });
+        .json({
+          msg: "A batch with this name already exists or another unique constraint was violated.",
+          error: err.detail || err.message, // Provide more specific error detail if available
+          code: err.code
+        });
+    }
+    // For other errors, send a 500 status
+    res.status(500).json({
+      msg: "Server error occurred while creating batch. Please check server logs for more details.",
+      error: err.message, // Include the error message in the response for easier debugging
+      code: err.code // Include error code if available
+    });
   } finally {
-    client.release();
+    if (client) { // Check if client was successfully initialized
+      client.release();
+      console.log("Database client released from POST /api/batches.");
+    }
   }
 });
 
@@ -133,12 +185,14 @@ router.put("/batches/:id", async (req, res) => {
     res.status(200).json({ msg: "Batch updated successfully" });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error(`Error updating batch ${id}:`, err);
-    if (err.code === "23505")
+    if (err.code === "23505") { // Check for unique violation on batch name (e.g., duplicate batch name)
       return res
         .status(409)
         .json({ msg: "A batch with this name already exists." });
-    res.status(500).json({ msg: "Internal server error" });
+    }
+    // Add detailed error logging for other errors
+    console.error('Error in POST /api/batches:', err); 
+    res.status(500).json({ msg: "Server error. Check server logs for details." });
   } finally {
     client.release();
   }
@@ -1004,6 +1058,159 @@ router.post("/generate-timetable", async (req, res) => {
   }
 });
 
+// POST endpoint to create/recreate timeslots for an existing batch
+router.post("/batches/:id/timeslots", async (req, res) => {
+  const { id } = req.params;
+  const { days, timeSlots } = req.body;
+  
+  // Default schedule if not provided
+  const defaultDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+  const defaultTimeSlots = [
+    { start: '09:00', end: '10:00', slot: 1 },
+    { start: '10:00', end: '11:00', slot: 2 },
+    { start: '11:15', end: '12:15', slot: 3 },
+    { start: '12:15', end: '13:15', slot: 4 },
+    { start: '14:00', end: '15:00', slot: 5 },
+    { start: '15:00', end: '16:00', slot: 6 },
+    { start: '16:15', end: '17:15', slot: 7 },
+    { start: '17:15', end: '18:15', slot: 8 }
+  ];
+
+  const useDays = days || defaultDays;
+  const useTimeSlots = timeSlots || defaultTimeSlots;
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    
+    // Check if batch exists
+    const batchCheck = await client.query("SELECT batch_id FROM batches WHERE batch_id = $1", [id]);
+    if (batchCheck.rows.length === 0) {
+      return res.status(404).json({ msg: "Batch not found" });
+    }
+
+    // Delete existing timeslots for this batch
+    await client.query("DELETE FROM batch_timeslots WHERE batch_id = $1", [id]);
+    console.log(`Cleared existing timeslots for batch ${id}`);
+
+    // Insert new batch timeslots
+    let timeslotsCreated = 0;
+    for (const day of useDays) {
+      for (const slot of useTimeSlots) {
+        await client.query(
+          "INSERT INTO batch_timeslots (batch_id, day_of_week, start_time, end_time, slot_index) VALUES ($1, $2, $3, $4, $5)",
+          [id, day, slot.start, slot.end, slot.slot]
+        );
+        timeslotsCreated++;
+      }
+    }
+    
+    await client.query("COMMIT");
+    console.log(`Created ${timeslotsCreated} timeslots for batch ${id}`);
+    
+    res.status(201).json({ 
+      msg: "Timeslots created successfully", 
+      batch_id: id,
+      timeslots_created: timeslotsCreated
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error(`Error creating timeslots for batch ${id}:`, err);
+    res.status(500).json({ msg: "Server error creating timeslots" });
+  } finally {
+    client.release();
+  }
+});
+
+// GET endpoint to check timeslots for a batch
+router.get("/batches/:id/timeslots", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "SELECT * FROM batch_timeslots WHERE batch_id = $1 ORDER BY day_of_week, slot_index",
+      [id]
+    );
+    res.json({
+      batch_id: id,
+      timeslots_count: result.rows.length,
+      timeslots: result.rows
+    });
+  } catch (err) {
+    console.error(`Error fetching timeslots for batch ${id}:`, err);
+    res.status(500).json({ msg: "Server error fetching timeslots" });
+  }
+});
+
+// POST endpoint to create timeslots for ALL batches that don't have them
+router.post("/batches/ensure-timeslots", async (req, res) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    
+    // Find batches without timeslots
+    const batchesWithoutTimeslots = await client.query(`
+      SELECT b.batch_id, b.name 
+      FROM batches b 
+      LEFT JOIN batch_timeslots bt ON b.batch_id = bt.batch_id 
+      WHERE bt.batch_id IS NULL
+    `);
+    
+    if (batchesWithoutTimeslots.rows.length === 0) {
+      return res.json({ msg: "All batches already have timeslots", batches_processed: 0 });
+    }
+
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const timeSlots = [
+      { start: '09:00', end: '10:00', slot: 1 },
+      { start: '10:00', end: '11:00', slot: 2 },
+      { start: '11:15', end: '12:15', slot: 3 },
+      { start: '12:15', end: '13:15', slot: 4 },
+      { start: '14:00', end: '15:00', slot: 5 },
+      { start: '15:00', end: '16:00', slot: 6 },
+      { start: '16:15', end: '17:15', slot: 7 },
+      { start: '17:15', end: '18:15', slot: 8 }
+    ];
+
+    let totalTimeslotsCreated = 0;
+    const processedBatches = [];
+
+    // Create timeslots for each batch
+    for (const batch of batchesWithoutTimeslots.rows) {
+      let batchTimeslots = 0;
+      for (const day of days) {
+        for (const slot of timeSlots) {
+          await client.query(
+            "INSERT INTO batch_timeslots (batch_id, day_of_week, start_time, end_time, slot_index) VALUES ($1, $2, $3, $4, $5)",
+            [batch.batch_id, day, slot.start, slot.end, slot.slot]
+          );
+          batchTimeslots++;
+          totalTimeslotsCreated++;
+        }
+      }
+      processedBatches.push({
+        batch_id: batch.batch_id,
+        name: batch.name,
+        timeslots_created: batchTimeslots
+      });
+      console.log(`Created ${batchTimeslots} timeslots for batch ${batch.name} (${batch.batch_id})`);
+    }
+    
+    await client.query("COMMIT");
+    
+    res.status(201).json({ 
+      msg: "Timeslots created for all batches without them", 
+      batches_processed: batchesWithoutTimeslots.rows.length,
+      total_timeslots_created: totalTimeslotsCreated,
+      processed_batches: processedBatches
+    });
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Error ensuring timeslots for batches:", err);
+    res.status(500).json({ msg: "Server error ensuring timeslots" });
+  } finally {
+    client.release();
+  }
+});
 
 
 
