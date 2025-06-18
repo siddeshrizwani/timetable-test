@@ -152,6 +152,32 @@ async function seedDatabase() {
     }
     console.log('   Finished linking subjects to batches.');
 
+    // 8. Create default timeslots for each batch
+    console.log('Creating default timeslots for each batch...');
+    const defaultDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const defaultTimeSlots = [
+      { start: '09:00', end: '10:00', slot: 1 },
+      { start: '10:00', end: '11:00', slot: 2 },
+      { start: '11:15', end: '12:15', slot: 3 },
+      { start: '12:15', end: '13:15', slot: 4 },
+      { start: '14:00', end: '15:00', slot: 5 },
+      { start: '15:00', end: '16:00', slot: 6 },
+      { start: '16:15', end: '17:15', slot: 7 },
+      { start: '17:15', end: '18:15', slot: 8 }
+    ];
+
+    for (const batch of batches) {
+      for (const day of defaultDays) {
+        for (const slot of defaultTimeSlots) {
+          await client.query(
+            'INSERT INTO public.batch_timeslots (batch_id, day_of_week, start_time, end_time, slot_index, slot_name) VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING',
+            [batch.batch_id, day, slot.start, slot.end, slot.slot, null]
+          );
+        }
+      }
+      console.log(`   Timeslots created for batch: ${batch.name}`);
+    }
+
     await client.query('COMMIT');
     console.log('✅ Transaction committed. Database seeded successfully!');
     console.log('\n--- Initial Admin User ---');
