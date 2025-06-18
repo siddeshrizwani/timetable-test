@@ -895,7 +895,11 @@ router.post("/generate-timetable", async (req, res) => {
     const pythonScriptPath = path.join(__dirname, '..', 'engine', 'solve_.py');
     console.log(`[${batchId}] Starting Python solver: ${pythonScriptPath} with input ${inputFilePath}`);
 
-    const pythonProcess = spawn('python3', [pythonScriptPath, inputFilePath]);
+    // Use different Python commands for local vs production
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT;
+    const pythonCommand = isProduction ? 'python3' : path.join(__dirname, '..', '..', '.venv', 'Scripts', 'python.exe');
+    
+    const pythonProcess = spawn(pythonCommand, [pythonScriptPath, inputFilePath]);
     console.log(`[${batchId}] Python process spawned with PID: ${pythonProcess.pid}. Timeout set for 30s.`);
 
     let pythonOutput = '';

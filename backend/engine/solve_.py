@@ -97,7 +97,7 @@ def generate_timetable_solution(input_data):
         model.AddDivisionEquality(event['day_var'], event['start_var'], SLOTS_PER_DAY)
         
         possible_rooms = lab_rooms if event['type'] == 'Lab' else lecture_rooms
-        room_domain = cp_model.Domain.FromValues(range(len(possible_rooms)))
+        room_domain = cp_model.Domain.FromValues(list(range(len(possible_rooms))))
         event['room_var_index'] = model.NewIntVarFromDomain(room_domain, f"{event['id']}_room_idx")
         event['possible_rooms'] = possible_rooms
 
