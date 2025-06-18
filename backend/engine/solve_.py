@@ -1,5 +1,6 @@
 import json
 import sys
+import os
 from ortools.sat.python import cp_model
 import collections
 
@@ -225,13 +226,17 @@ if __name__ == '__main__':
         sys.exit(1)
     
     input_file_path = sys.argv[1]
-    
-    # Read input JSON to extract batch_id for output file naming
+      # Read input JSON to extract batch_id for output file naming
     try:
         with open(input_file_path, 'r') as f:
             input_json_data = json.load(f)            
             batch_id = input_json_data.get('batch_to_schedule', {}).get('batch_id', 'unknown')    
-            output_file_path = f'engine/outputs/{batch_id}_output.json'
+            
+            # Create absolute path to outputs directory
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            outputs_dir = os.path.join(script_dir, 'outputs')
+            os.makedirs(outputs_dir, exist_ok=True)
+            output_file_path = os.path.join(outputs_dir, f'{batch_id}_output.json')
     except Exception as e:
         print(f"Error reading input file: {e}", file=sys.stderr)
         sys.exit(1)
