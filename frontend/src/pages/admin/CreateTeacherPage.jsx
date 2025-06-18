@@ -12,7 +12,7 @@ const CreateTeacherPage = () => {
     e.preventDefault();
     const token = localStorage.getItem("authToken");
     try {
-      const response = await fetch("http://localhost:3000/api/teachers", {
+      const response = await fetch("/api/teachers", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

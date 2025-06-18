@@ -23,7 +23,7 @@ const CreateSubjectPage = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:3000/api/subjects", {
+      const response = await fetch("/api/subjects", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

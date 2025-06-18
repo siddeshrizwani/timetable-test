@@ -44,8 +44,8 @@ const AdminDashboardOverview = () => {
 
     // Fetch both stats and the list of batches
     Promise.all([
-      fetchData("http://localhost:3000/api/stats"),
-      fetchData("http://localhost:3000/api/batches"),
+      fetchData("/api/stats"),
+      fetchData("/api/batches"),
     ])
       .then(([statsData, batchesData]) => {
         setStats(statsData);
@@ -81,7 +81,7 @@ const AdminDashboardOverview = () => {
     const token = localStorage.getItem("authToken");
     try {
       const response = await fetch(
-        "http://localhost:3000/api/generate-timetable",
+        "/api/generate-timetable",
         {
           method: "POST",
           headers: {

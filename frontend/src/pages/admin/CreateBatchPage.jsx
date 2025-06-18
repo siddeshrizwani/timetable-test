@@ -32,7 +32,7 @@ const CreateBatchPage = () => {
       }
 
       try {
-        const response = await fetch("http://localhost:3000/api/subjects", {
+        const response = await fetch("/api/subjects", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) throw new Error("Failed to fetch subjects.");
@@ -126,7 +126,7 @@ const CreateBatchPage = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:3000/api/batches", {
+      const response = await fetch("/api/batches", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

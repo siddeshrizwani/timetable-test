@@ -14,7 +14,7 @@ const BatchDetailPage = () => {
       const token = localStorage.getItem("authToken");
       try {
         const response = await fetch(
-          `http://localhost:3000/api/batches/${batchId}`,
+          `/api/batches/${batchId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }

@@ -5,6 +5,8 @@
     "buildCommand": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend"
   },
   "deploy": {
-    "startCommand": "npm start --prefix backend"
+    "startCommand": "node backend/seed.js && npm start --prefix backend",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
   }
 }

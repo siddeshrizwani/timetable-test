@@ -58,7 +58,7 @@ const BatchesListPage = () => {
       return;
     }
     try {
-      const response = await fetch("http://localhost:3000/api/batches", {
+      const response = await fetch("/api/batches", {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -111,7 +111,7 @@ const BatchesListPage = () => {
       const token = localStorage.getItem("authToken");
       try {
         const response = await fetch(
-          `http://localhost:3000/api/batches/${batchId}`,
+          `/api/batches/${batchId}`,
           {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },

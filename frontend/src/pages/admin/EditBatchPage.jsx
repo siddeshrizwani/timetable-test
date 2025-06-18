@@ -32,7 +32,7 @@ const EditBatchPage = () => {
     const fetchSubjects = async () => {
       const token = localStorage.getItem("authToken");
       try {
-        const response = await fetch("http://localhost:3000/api/subjects", {
+        const response = await fetch("/api/subjects", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) throw new Error("Failed to fetch subjects.");
@@ -52,7 +52,7 @@ const EditBatchPage = () => {
       const token = localStorage.getItem("authToken");
       try {
         const res = await fetch(
-          `http://localhost:3000/api/batches/${batchId}`,
+          `/api/batches/${batchId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -107,7 +107,7 @@ const EditBatchPage = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/batches/${batchId}`,
+        `/api/batches/${batchId}`,
         {
           method: "PUT",
           headers: {
