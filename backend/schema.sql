@@ -60,7 +60,7 @@ CREATE TABLE public.batch_subjects (
 ALTER TABLE public.batch_subjects OWNER TO postgres;
 
 --
--- Name: batch_timeslots; Type: TABLE; Schema: public; Owner: timetable
+-- Name: batch_timeslots; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.batch_timeslots (
@@ -76,10 +76,10 @@ CREATE TABLE public.batch_timeslots (
 );
 
 
-ALTER TABLE public.batch_timeslots OWNER TO timetable;
+ALTER TABLE public.batch_timeslots OWNER TO postgres;
 
 --
--- Name: batch_timeslots_timeslot_id_seq; Type: SEQUENCE; Schema: public; Owner: timetable
+-- Name: batch_timeslots_timeslot_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.batch_timeslots_timeslot_id_seq
@@ -91,10 +91,10 @@ CREATE SEQUENCE public.batch_timeslots_timeslot_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.batch_timeslots_timeslot_id_seq OWNER TO timetable;
+ALTER SEQUENCE public.batch_timeslots_timeslot_id_seq OWNER TO postgres;
 
 --
--- Name: batch_timeslots_timeslot_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: timetable
+-- Name: batch_timeslots_timeslot_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.batch_timeslots_timeslot_id_seq OWNED BY public.batch_timeslots.timeslot_id;
@@ -116,7 +116,7 @@ CREATE TABLE public.batches (
 ALTER TABLE public.batches OWNER TO postgres;
 
 --
--- Name: class_sessions; Type: TABLE; Schema: public; Owner: timetable
+-- Name: class_sessions; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.class_sessions (
@@ -132,7 +132,7 @@ CREATE TABLE public.class_sessions (
 );
 
 
-ALTER TABLE public.class_sessions OWNER TO timetable;
+ALTER TABLE public.class_sessions OWNER TO postgres;
 
 --
 -- Name: rooms; Type: TABLE; Schema: public; Owner: postgres
@@ -178,7 +178,7 @@ CREATE TABLE public.teachers (
 ALTER TABLE public.teachers OWNER TO postgres;
 
 --
--- Name: batch_timetable_view; Type: VIEW; Schema: public; Owner: timetable
+-- Name: batch_timetable_view; Type: VIEW; Schema: public; Owner: postgres
 --
 
 CREATE VIEW public.batch_timetable_view AS
@@ -208,10 +208,10 @@ CREATE VIEW public.batch_timetable_view AS
   ORDER BY b.name, bt.day_of_week, bt.slot_index;
 
 
-ALTER VIEW public.batch_timetable_view OWNER TO timetable;
+ALTER VIEW public.batch_timetable_view OWNER TO postgres;
 
 --
--- Name: blocked_timeslots; Type: TABLE; Schema: public; Owner: timetable
+-- Name: blocked_timeslots; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.blocked_timeslots (
@@ -225,10 +225,10 @@ CREATE TABLE public.blocked_timeslots (
 );
 
 
-ALTER TABLE public.blocked_timeslots OWNER TO timetable;
+ALTER TABLE public.blocked_timeslots OWNER TO postgres;
 
 --
--- Name: blocked_timeslots_block_id_seq; Type: SEQUENCE; Schema: public; Owner: timetable
+-- Name: blocked_timeslots_block_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.blocked_timeslots_block_id_seq
@@ -240,17 +240,17 @@ CREATE SEQUENCE public.blocked_timeslots_block_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.blocked_timeslots_block_id_seq OWNER TO timetable;
+ALTER SEQUENCE public.blocked_timeslots_block_id_seq OWNER TO postgres;
 
 --
--- Name: blocked_timeslots_block_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: timetable
+-- Name: blocked_timeslots_block_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.blocked_timeslots_block_id_seq OWNED BY public.blocked_timeslots.block_id;
 
 
 --
--- Name: class_sessions_backup; Type: TABLE; Schema: public; Owner: timetable
+-- Name: class_sessions_backup; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.class_sessions_backup (
@@ -266,7 +266,7 @@ CREATE TABLE public.class_sessions_backup (
 );
 
 
-ALTER TABLE public.class_sessions_backup OWNER TO timetable;
+ALTER TABLE public.class_sessions_backup OWNER TO postgres;
 
 --
 -- Name: refresh_tokens; Type: TABLE; Schema: public; Owner: postgres
@@ -353,7 +353,7 @@ CREATE TABLE public.students (
 ALTER TABLE public.students OWNER TO postgres;
 
 --
--- Name: teacher_allocations; Type: TABLE; Schema: public; Owner: timetable
+-- Name: teacher_allocations; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.teacher_allocations (
@@ -367,10 +367,10 @@ CREATE TABLE public.teacher_allocations (
 );
 
 
-ALTER TABLE public.teacher_allocations OWNER TO timetable;
+ALTER TABLE public.teacher_allocations OWNER TO postgres;
 
 --
--- Name: teacher_allocations_allocation_id_seq; Type: SEQUENCE; Schema: public; Owner: timetable
+-- Name: teacher_allocations_allocation_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.teacher_allocations_allocation_id_seq
@@ -382,10 +382,10 @@ CREATE SEQUENCE public.teacher_allocations_allocation_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.teacher_allocations_allocation_id_seq OWNER TO timetable;
+ALTER SEQUENCE public.teacher_allocations_allocation_id_seq OWNER TO postgres;
 
 --
--- Name: teacher_allocations_allocation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: timetable
+-- Name: teacher_allocations_allocation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.teacher_allocations_allocation_id_seq OWNED BY public.teacher_allocations.allocation_id;
@@ -408,7 +408,7 @@ CREATE TABLE public.timeslots (
 ALTER TABLE public.timeslots OWNER TO postgres;
 
 --
--- Name: timetable_generations; Type: TABLE; Schema: public; Owner: timetable
+-- Name: timetable_generations; Type: TABLE; Schema: public; Owner: postgres
 --
 
 CREATE TABLE public.timetable_generations (
@@ -423,10 +423,10 @@ CREATE TABLE public.timetable_generations (
 );
 
 
-ALTER TABLE public.timetable_generations OWNER TO timetable;
+ALTER TABLE public.timetable_generations OWNER TO postgres;
 
 --
--- Name: timetable_generations_generation_id_seq; Type: SEQUENCE; Schema: public; Owner: timetable
+-- Name: timetable_generations_generation_id_seq; Type: SEQUENCE; Schema: public; Owner: postgres
 --
 
 CREATE SEQUENCE public.timetable_generations_generation_id_seq
@@ -438,10 +438,10 @@ CREATE SEQUENCE public.timetable_generations_generation_id_seq
     CACHE 1;
 
 
-ALTER SEQUENCE public.timetable_generations_generation_id_seq OWNER TO timetable;
+ALTER SEQUENCE public.timetable_generations_generation_id_seq OWNER TO postgres;
 
 --
--- Name: timetable_generations_generation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: timetable
+-- Name: timetable_generations_generation_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
 
 ALTER SEQUENCE public.timetable_generations_generation_id_seq OWNED BY public.timetable_generations.generation_id;
@@ -710,7 +710,7 @@ ALTER TABLE ONLY public.timeslots
 
 
 --
--- Name: timetable_generations timetable_generations_pkey; Type: CONSTRAINT; Schema: public; Owner: timetable
+-- Name: timetable_generations timetable_generations_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
 ALTER TABLE ONLY public.timetable_generations
@@ -975,91 +975,91 @@ ALTER TABLE ONLY public.users
 -- Name: TABLE batch_students; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE public.batch_students TO timetable;
+GRANT ALL ON TABLE public.batch_students TO postgres;
 
 
 --
 -- Name: TABLE batch_subjects; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE public.batch_subjects TO timetable;
+GRANT ALL ON TABLE public.batch_subjects TO postgres;
 
 
 --
 -- Name: TABLE batches; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE public.batches TO timetable;
+GRANT ALL ON TABLE public.batches TO postgres;
 
 
 --
 -- Name: TABLE rooms; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE public.rooms TO timetable;
+GRANT ALL ON TABLE public.rooms TO postgres;
 
 
 --
 -- Name: TABLE subjects; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE public.subjects TO timetable;
+GRANT ALL ON TABLE public.subjects TO postgres;
 
 
 --
 -- Name: TABLE teachers; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE public.teachers TO timetable;
+GRANT ALL ON TABLE public.teachers TO postgres;
 
 
 --
 -- Name: TABLE refresh_tokens; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE public.refresh_tokens TO timetable;
+GRANT ALL ON TABLE public.refresh_tokens TO postgres;
 
 
 --
 -- Name: SEQUENCE refresh_tokens_id_seq; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT,USAGE ON SEQUENCE public.refresh_tokens_id_seq TO timetable;
+GRANT SELECT,USAGE ON SEQUENCE public.refresh_tokens_id_seq TO postgres;
 
 
 --
 -- Name: TABLE roles; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE public.roles TO timetable;
+GRANT ALL ON TABLE public.roles TO postgres;
 
 
 --
 -- Name: SEQUENCE roles_id_seq; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT SELECT,USAGE ON SEQUENCE public.roles_id_seq TO timetable;
+GRANT SELECT,USAGE ON SEQUENCE public.roles_id_seq TO postgres;
 
 
 --
 -- Name: TABLE students; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE public.students TO timetable;
+GRANT ALL ON TABLE public.students TO postgres;
 
 
 --
 -- Name: TABLE timeslots; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE public.timeslots TO timetable;
+GRANT ALL ON TABLE public.timeslots TO postgres;
 
 
 --
 -- Name: TABLE users; Type: ACL; Schema: public; Owner: postgres
 --
 
-GRANT ALL ON TABLE public.users TO timetable;
+GRANT ALL ON TABLE public.users TO postgres;
 
 
 --
