@@ -3,14 +3,22 @@ const bcrypt = require('bcrypt');
 
 require('dotenv').config();
 // --- Database Configuration ---
-// It's highly recommended to use environment variables for these settings.
-const dbConfig = {
-  user: process.env.DB_USER || 'timetable',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'TimeTable',
-  password: process.env.DB_PASSWORD || 'admin', // <-- IMPORTANT: Change this!
-  port: parseInt(process.env.DB_PORT || '5432', 10),
-};
+// Use DATABASE_URL (for Railway/production) if present, else use local env vars
+let dbConfig;
+if (process.env.DATABASE_URL) {
+  dbConfig = {
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  };
+} else {
+  dbConfig = {
+    user: process.env.DB_USER || 'timetable',
+    host: process.env.DB_HOST || 'localhost',
+    database: process.env.DB_NAME || 'TimeTable',
+    password: process.env.DB_PASSWORD || 'admin', // <-- IMPORTANT: Change this!
+    port: parseInt(process.env.DB_PORT || '5432', 10),
+  };
+}
 
 const pool = new Pool(dbConfig);
 const SALT_ROUNDS = 10;

@@ -15,7 +15,7 @@ const EditTeacherPage = () => {
     const fetchTeacher = async () => {
       try {
         const response = await fetch(
-          `http://localhost:3000/api/teachers/${teacherId}`,
+          `/api/teachers/${teacherId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         const data = await response.json();
@@ -34,7 +34,7 @@ const EditTeacherPage = () => {
     const token = localStorage.getItem("authToken");
     try {
       const response = await fetch(
-        `http://localhost:3000/api/teachers/${teacherId}`,
+        `/api/teachers/${teacherId}`,
         {
           method: "PUT",
           headers: {

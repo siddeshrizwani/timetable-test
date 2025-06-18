@@ -36,7 +36,7 @@ const TimetableViewerPage = () => {
     const fetchBatches = async () => {
       const token = localStorage.getItem("authToken");
       try {
-        const response = await fetch("http://localhost:3000/api/batches", {
+        const response = await fetch("/api/batches", {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!response.ok) throw new Error("Failed to fetch batches.");
@@ -100,7 +100,7 @@ const TimetableViewerPage = () => {
         
         // Fallback to API
         const response = await fetch(
-          `http://localhost:3000/api/timetable/${selectedBatch}`,
+          `/api/timetable/${selectedBatch}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -181,7 +181,7 @@ const TimetableViewerPage = () => {
           }
           
           const response = await fetch(
-            `http://localhost:3000/api/timetable/${selectedBatch}`,
+            `/api/timetable/${selectedBatch}`,
             {
               headers: { Authorization: `Bearer ${token}` },
             }

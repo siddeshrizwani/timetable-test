@@ -27,7 +27,7 @@ const FacultyDashboardPage = () => {
       const token = localStorage.getItem("authToken");
       try {
         const response = await fetch(
-          "http://localhost:3000/api/faculty/my-schedule",
+          "/api/faculty/my-schedule",
           {
             headers: { Authorization: `Bearer ${token}` },
           }

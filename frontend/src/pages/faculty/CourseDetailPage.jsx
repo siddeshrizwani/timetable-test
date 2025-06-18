@@ -12,7 +12,7 @@ const CourseDetailPage = () => {
       const token = localStorage.getItem("authToken");
       try {
         const response = await fetch(
-          `http://localhost:3000/api/faculty/batch/${batchId}/students`,
+          `/api/faculty/batch/${batchId}/students`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }

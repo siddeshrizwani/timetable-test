@@ -9,7 +9,7 @@ const TeachersListPage = () => {
     setIsLoading(true);
     const token = localStorage.getItem("authToken");
     try {
-      const response = await fetch("http://localhost:3000/api/teachers", {
+      const response = await fetch("/api/teachers", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch teachers.");

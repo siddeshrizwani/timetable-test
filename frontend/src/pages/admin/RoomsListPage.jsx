@@ -12,7 +12,7 @@ const RoomsListPage = () => {
     setIsLoading(true);
     const token = localStorage.getItem("authToken");
     try {
-      const response = await fetch("http://localhost:3000/api/rooms", {
+      const response = await fetch("/api/rooms", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch rooms.");
@@ -34,7 +34,7 @@ const RoomsListPage = () => {
       const token = localStorage.getItem("authToken");
       try {
         const response = await fetch(
-          `http://localhost:3000/api/rooms/${roomId}`,
+          `/api/rooms/${roomId}`,
           {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },

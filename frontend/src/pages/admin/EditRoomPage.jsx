@@ -22,7 +22,7 @@ const EditRoomPage = () => {
       setIsDataLoading(true);
       try {
         const response = await fetch(
-          `http://localhost:3000/api/rooms/${roomId}`,
+          `/api/rooms/${roomId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -58,7 +58,7 @@ const EditRoomPage = () => {
 
     try {
       const response = await fetch(
-        `http://localhost:3000/api/rooms/${roomId}`,
+        `/api/rooms/${roomId}`,
         {
           method: "PUT",
           headers: {

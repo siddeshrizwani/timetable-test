@@ -14,7 +14,7 @@ const SubjectDetailPage = () => {
       const token = localStorage.getItem("authToken");
       try {
         const response = await fetch(
-          `http://localhost:3000/api/subjects/${subjectId}`,
+          `/api/subjects/${subjectId}`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }

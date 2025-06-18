@@ -31,7 +31,7 @@ const FacultyProfilePage = () => {
     setIsLoading(true);
     const token = localStorage.getItem("authToken");
     try {
-      const response = await fetch("http://localhost:3000/api/profile/me", {
+      const response = await fetch("/api/profile/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch profile.");
@@ -125,7 +125,7 @@ const EditProfileModal = ({
     setError("");
     const token = localStorage.getItem("authToken");
     try {
-      const response = await fetch("http://localhost:3000/api/profile/me", {
+      const response = await fetch("/api/profile/me", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -199,7 +199,7 @@ const ChangePasswordModal = ({ isOpen, onClose }) => {
     const token = localStorage.getItem("authToken");
     try {
       const response = await fetch(
-        "http://localhost:3000/api/profile/change-password",
+        "/api/profile/change-password",
         {
           method: "POST",
           headers: {
