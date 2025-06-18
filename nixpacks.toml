@@ -1,6 +1,8 @@
-[providers]
-nodejs = "18"
-python = "3.11"
+providers = ["nodejs", "python"]
+
+[variables]
+NODE_VERSION = "18"
+PYTHON_VERSION = "3.11"
 
 [phases.build]
 cmds = [
