@@ -9,7 +9,7 @@ cmds = [
   "npm install --prefix backend",
   "npm install --prefix frontend", 
   "npm run build --prefix frontend",
-  "pip install -r backend/engine/requirements.txt"
+  "python -m pip install -r backend/engine/requirements.txt"
 ]
 
 [phases.start]
