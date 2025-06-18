@@ -376,14 +376,21 @@ router.get("/teachers", async (req, res) => {
 });
 
 router.post("/teachers", async (req, res) => {
-  const { name, email, password } = req.body;
-  const client = await pool.connect();
+  const { name, email, password } = req.body;  const client = await pool.connect();
   try {
     await client.query("BEGIN");
     const hashedPassword = await bcrypt.hash(password, 10);
+    
+    // Get teacher role_id from database
+    const roleResult = await client.query("SELECT id FROM roles WHERE name = 'teacher'");
+    if (roleResult.rows.length === 0) {
+      throw new Error("Teacher role not found in database");
+    }
+    const teacherRoleId = roleResult.rows[0].id;
+    
     const userRes = await client.query(
-      "INSERT INTO users (username, email, password_hash, role_id, provider, requires_password_change) VALUES ($1, $2, $3, 3, 'local', TRUE) RETURNING id",
-      [name, email, hashedPassword]
+      "INSERT INTO users (username, email, password_hash, role_id, provider, requires_password_change) VALUES ($1, $2, $3, $4, 'local', TRUE) RETURNING id",
+      [name, email, hashedPassword, teacherRoleId]
     );
     const teacherRes = await client.query(
       "INSERT INTO teachers (name, email, user_id) VALUES ($1, $2, $3) RETURNING *",
