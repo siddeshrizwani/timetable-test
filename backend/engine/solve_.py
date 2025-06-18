@@ -1,6 +1,7 @@
 import json
 import sys
 import os
+import shutil
 from ortools.sat.python import cp_model
 import collections
 
@@ -247,6 +248,20 @@ if __name__ == '__main__':
         with open(output_file_path, 'w') as f:
             json.dump(solution_output, f, indent=2)
         print(f"Timetable solution saved to {output_file_path}")
+        
+        # Also copy to frontend dist directory for static file access
+        try:
+            script_dir = os.path.dirname(os.path.abspath(__file__))
+            frontend_dist_dir = os.path.join(script_dir, '..', '..', 'frontend', 'dist')
+            if os.path.exists(frontend_dist_dir):
+                static_output_path = os.path.join(frontend_dist_dir, f'timetable_{batch_id}.json')
+                shutil.copy2(output_file_path, static_output_path)
+                print(f"Timetable solution also copied to {static_output_path}")
+            else:
+                print(f"Frontend dist directory not found: {frontend_dist_dir}")
+        except Exception as copy_error:
+            print(f"Warning: Could not copy to static directory: {copy_error}", file=sys.stderr)
+            
     except Exception as e:
         print(f"Error saving output file: {e}", file=sys.stderr)
         print(json.dumps(solution_output, indent=2))

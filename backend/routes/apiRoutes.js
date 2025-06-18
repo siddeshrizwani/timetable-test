@@ -239,10 +239,9 @@ router.delete("/batches/:id", async (req, res) => {
     const fs = require('fs');
     const path = require('path');
     
-    try {
-      // Delete output files
+    try {      // Delete output files
       const outputFile = path.join(__dirname, '..', 'engine', 'outputs', `${id}_output.json`);
-      const frontendFile = path.join(__dirname, '..', '..', 'frontend', 'public', `timetable_${id}.json`);
+      const frontendFile = path.join(__dirname, '..', '..', 'frontend', 'dist', `timetable_${id}.json`);
       
       if (fs.existsSync(outputFile)) {
         fs.unlinkSync(outputFile);
@@ -928,11 +927,9 @@ router.post("/generate-timetable", async (req, res) => {
           error: pythonError || `Python script exited with code ${code}.`,
           batchId: batchId,
         });
-      }
-
-      // Process the output
+      }      // Process the output
       const outputFilePath = path.join(__dirname, '..', 'engine', 'outputs', `${batchId}_output.json`);
-      const frontendOutputPath = path.join(__dirname, '..', '..', 'frontend', 'public', `timetable_${batchId}.json`);
+      const frontendOutputPath = path.join(__dirname, '..', '..', 'frontend', 'dist', `timetable_${batchId}.json`);
 
       try {
         if (!fs.existsSync(outputFilePath)) {
