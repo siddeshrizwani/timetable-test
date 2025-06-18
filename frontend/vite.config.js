@@ -34,5 +34,5 @@ export default defineConfig({
   },
   
   // Base path for production (important for single-server deployment)
-  base: './'
+  base: '/'
 })

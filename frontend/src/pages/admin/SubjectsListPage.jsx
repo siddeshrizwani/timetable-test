@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
+import eye2 from "../../assets/icons/eye2.svg";
+import pencil from "../../assets/icons/pencil.svg";
+import trash2 from "../../assets/icons/trash-2.svg";
 
 const SearchIcon = () => (
   <svg
@@ -172,7 +175,7 @@ const SubjectsListPage = () => {
                           className="p-2 text-slate-500 hover:text-indigo-600 rounded-full hover:bg-indigo-50 transition"
                         >
                           <img
-                            src="/src/assets/icons/eye2.svg"
+                            src={eye2}
                             alt="View"
                             className="w-5 h-5"
                           />
@@ -183,7 +186,7 @@ const SubjectsListPage = () => {
                           className="p-2 text-slate-500 hover:text-sky-600 rounded-full hover:bg-sky-50 transition"
                         >
                           <img
-                            src="/src/assets/icons/pencil.svg"
+                            src={pencil}
                             alt="Edit"
                             className="w-5 h-5"
                           />
@@ -196,7 +199,7 @@ const SubjectsListPage = () => {
                           className="p-2 text-slate-500 hover:text-red-600 rounded-full hover:bg-red-50 transition"
                         >
                           <img
-                            src="/src/assets/icons/trash-2.svg"
+                            src={trash2}
                             alt="Delete"
                             className="w-5 h-5"
                           />

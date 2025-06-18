@@ -4,6 +4,8 @@ const bcrypt = require("bcrypt");
 const pool = require("../config/db");
 const { spawn } = require("child_process");
 const { v4: uuidv4 } = require("uuid");
+const path = require('path');
+
 
 // --- DASHBOARD API ---
 router.get("/stats", async (req, res) => {
