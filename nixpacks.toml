@@ -1,0 +1,14 @@
+[providers]
+nodejs = "18"
+python = "3.11"
+
+[phases.build]
+cmds = [
+  "npm install --prefix backend",
+  "npm install --prefix frontend", 
+  "npm run build --prefix frontend",
+  "pip install -r backend/engine/requirements.txt"
+]
+
+[phases.start]
+cmd = "node backend/seed.js && npm start --prefix backend"

@@ -885,13 +885,11 @@ router.post("/generate-timetable", async (req, res) => {
     }
 
     await fs.promises.writeFile(inputFilePath, JSON.stringify(inputData, null, 2));
-    console.log(`[${batchId}] Input file created: ${inputFilePath}`);
-
-    // Execute Python solver
+    console.log(`[${batchId}] Input file created: ${inputFilePath}`);    // Execute Python solver
     const pythonScriptPath = path.join(__dirname, '..', 'engine', 'solve_.py');
     console.log(`[${batchId}] Starting Python solver: ${pythonScriptPath} with input ${inputFilePath}`);
 
-    const pythonProcess = spawn('python', [pythonScriptPath, inputFilePath]);
+    const pythonProcess = spawn('python3', [pythonScriptPath, inputFilePath]);
     console.log(`[${batchId}] Python process spawned with PID: ${pythonProcess.pid}. Timeout set for 30s.`);
 
     let pythonOutput = '';

@@ -80,10 +80,9 @@ async function testTimetableGeneration() {
         const inputFilePath = path.join(__dirname, 'engine', `input_${batchId}.json`);
         fs.writeFileSync(inputFilePath, JSON.stringify(inputData, null, 2));
         console.log(`💾 Created input file: ${inputFilePath}`);
-        
-        // 7. Run the Python solver
+          // 7. Run the Python solver
         console.log('🐍 Running Python solver...');
-        const pythonProcess = spawn('python', [
+        const pythonProcess = spawn('python3', [
             path.join(__dirname, 'engine', 'solve_.py'),
             inputFilePath
         ]);
