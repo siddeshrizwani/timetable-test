@@ -396,3 +396,4 @@ test-output/
 .yarn/install-state.gz
 .pnp.*
 backend/db
+backend/.env.example
