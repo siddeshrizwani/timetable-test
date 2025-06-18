@@ -86,6 +86,7 @@ web_modules/
 
 # Environment variables (IMPORTANT: Keep .env files secret!)
 .env
+.env.example
 .env.local
 .env.development.local
 .env.test.local
