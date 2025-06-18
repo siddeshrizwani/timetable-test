@@ -1,34 +1,34 @@
---
--- PostgreSQL database dump
---
+-- =====================================================
+-- University Timetable Management System
+-- Database Schema for Local Development
+-- =====================================================
+-- 
+-- This schema creates all necessary tables for the 
+-- University Timetable Management System.
+-- 
+-- Run this file using:
+-- psql -U timetable -d TimeTable -f schema.sql
+-- 
+-- Prerequisites:
+-- - PostgreSQL database named 'TimeTable'
+-- - User 'timetable' with appropriate permissions
+-- =====================================================
 
--- Dumped from database version 17.5
--- Dumped by pg_dump version 17.5
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET idle_in_transaction_session_timeout = 0;
-SET transaction_timeout = 0;
+-- Set session parameters for consistent behavior
 SET client_encoding = 'UTF8';
 SET standard_conforming_strings = on;
-SELECT pg_catalog.set_config('search_path', '', false);
 SET check_function_bodies = false;
-SET xmloption = content;
 SET client_min_messages = warning;
-SET row_security = off;
 
---
--- Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner: -
---
+-- Set search path
+SET search_path = public, pg_catalog;
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
+-- =====================================================
+-- EXTENSIONS
+-- =====================================================
 
-
---
--- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: 
---
-
-COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
+-- Create UUID extension if it doesn't exist
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 
 SET default_tablespace = '';
