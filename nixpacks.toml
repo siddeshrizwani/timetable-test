@@ -4,9 +4,6 @@ providers = ["node", "python"]
 NODE_VERSION = "18"
 PYTHON_VERSION = "3.11"
 
-[phases.setup]
-cmds = ["pip install -r backend/engine/requirements.txt"]
-
 [phases.build]
 cmds = [
   "npm install --prefix backend",
