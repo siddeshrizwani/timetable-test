@@ -13,6 +13,6 @@
 - Real-time updates and export functionality.
 
 ## Technologies Used
-- Frontend: React, Tailwind
+- Frontend: React, Tailwind , Javascript
 - Backend: Express, Node
 - Logic: C++, Google OR-Tools
