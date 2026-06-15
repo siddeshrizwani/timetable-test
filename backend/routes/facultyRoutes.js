@@ -221,19 +221,52 @@
 // backend/routes/facultyRoutes.js
 
 const express = require("express");
-const router = express.Router(); // Initialization should be at the top
+const router = express.Router();
 const pool = require("../config/db");
 const { authenticateToken, authorizeRole } = require("../middleware/authMiddleware");
 
-// Middleware to protect all faculty routes
-router.use(authenticateToken);
-router.use(authorizeRole(['faculty', 'admin', 'super']));
+// ** NEW MIDDLEWARE TO ATTACH TEACHER ID **
+const getTeacherId = async (req, res, next) => {
+  // This middleware assumes authenticateToken has already run and attached req.user
+  if (!req.user || !req.user.id) {
+    return res.status(401).json({ msg: "Authentication error, user ID missing." });
+  }
+
+  try {
+    const teacherResult = await pool.query(
+      'SELECT teacher_id FROM teachers WHERE user_id = $1',
+      [req.user.id]
+    );
+
+    if (teacherResult.rows.length === 0) {
+      // This is a user who is not a teacher
+      return res.status(403).json({ msg: "Access denied. User is not a registered teacher." });
+    }
+
+    // ** FIX: Attach teacher_id to the req.user object **
+    req.user.teacher_id = teacherResult.rows[0].teacher_id;
+    next(); // Proceed to the next middleware or the route handler
+
+  } catch (err) {
+    console.error("Error fetching teacher ID:", err);
+    res.status(500).json({ msg: "Internal server error." });
+  }
+};
+
+
+// ** UPDATED: Middleware pipeline for all faculty routes **
+router.use(authenticateToken); // First, ensure user is logged in
+router.use(authorizeRole(['faculty', 'admin', 'super'])); // Second, check their role
+router.use(getTeacherId); // Third, get and attach their teacher_id
+
 
 // GET Faculty Dashboard
 router.get("/dashboard", async (req, res) => {
   try {
+    // This line will now work correctly
     const teacherId = req.user.teacher_id;
     if (!teacherId) {
+      // This check is now redundant but kept as a safeguard
       return res.status(400).json({ msg: "Teacher ID not found for user" });
     }
 
@@ -241,8 +274,8 @@ router.get("/dashboard", async (req, res) => {
     const scheduleQuery = `
       SELECT 
         cs.session_id,
-        s.subject_name,
-        b.batch_name,
+        s.name as subject_name,
+        b.name as batch_name,
         r.room_name,
         t.start_time,
         t.end_time,
@@ -288,18 +321,20 @@ router.get("/my-courses", async (req, res) => {
   try {
     const teacherId = req.user.teacher_id;
 
+    // --- FIX: Corrected the SQL query column names ---
     const query = `
         SELECT DISTINCT
             s.subject_id,
-            s.subject_code,
-            s.subject_name,
-            s.semester,
+            s.code AS subject_code,      -- Use 's.code' and alias it
+            s.name AS subject_name,      -- Use 's.name' and alias it
+            b.name AS batch_name,
+            b.batch_id,
             b.department
         FROM class_sessions cs
         JOIN subjects s ON cs.subject_id = s.subject_id
         JOIN batches b ON cs.batch_id = b.batch_id
         WHERE cs.teacher_id = $1
-        ORDER BY s.subject_name;
+        ORDER BY s.name;
     `;
     const result = await pool.query(query, [teacherId]);
     res.json(result.rows);
@@ -308,7 +343,6 @@ router.get("/my-courses", async (req, res) => {
     res.status(500).json({ msg: "Internal server error" });
   }
 });
-
 
 // GET details for a specific course, including the batches they teach it to
 router.get("/my-courses/:subjectId", async (req, res) => {
@@ -319,7 +353,7 @@ router.get("/my-courses/:subjectId", async (req, res) => {
         // First, get subject details
         const subjectQuery = `
             SELECT 
-                subject_id, subject_code, subject_name, semester, lecture_credits, lab_credits 
+                subject_id, code as subject_code, name as subject_name, semester, lecture_credits, lab_credits 
             FROM subjects 
             WHERE subject_id = $1;
         `;
@@ -334,12 +368,12 @@ router.get("/my-courses/:subjectId", async (req, res) => {
         const batchesQuery = `
             SELECT DISTINCT
                 b.batch_id,
-                b.batch_name,
+                b.name as batch_name,
                 b.department
             FROM class_sessions cs
             JOIN batches b ON cs.batch_id = b.batch_id
             WHERE cs.teacher_id = $1 AND cs.subject_id = $2
-            ORDER BY b.batch_name;
+            ORDER BY b.name;
         `;
 
         const batchesResult = await pool.query(batchesQuery, [teacherId, subjectId]);
@@ -371,8 +405,8 @@ router.get("/my-timetable", async (req, res) => {
               ts.day_of_week,
               ts.start_time,
               ts.end_time,
-              s.subject_name,
-              b.batch_name,
+              s.name as subject_name,
+              b.name as batch_name,
               r.room_name
           FROM class_sessions cs
           JOIN timeslots ts ON cs.timeslot_id = ts.timeslot_id
